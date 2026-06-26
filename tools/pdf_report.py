@@ -208,7 +208,7 @@ def generate_pdf(company, cuit, title_text, content, include_disclaimer=True):
     if include_disclaimer:
         _write_disclaimer(pdf)
 
-    return pdf.output()
+    return bytes(pdf.output())
 
 
 def make_dd_pdf(company, cuit, dd_text):
