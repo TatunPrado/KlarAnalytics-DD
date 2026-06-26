@@ -87,6 +87,26 @@ def _write_disclaimer(pdf):
 
 CW = 190  # effective content width (210 - 10*2 margins)
 
+_REPLACEMENTS = {
+    "\u2014": "-",   # em dash
+    "\u2013": "-",   # en dash
+    "\u2018": "'",   # left single quote
+    "\u2019": "'",   # right single quote
+    "\u201c": '"',   # left double quote
+    "\u201d": '"',   # right double quote
+    "\u2022": "-",   # bullet
+    "\u2026": "...", # ellipsis
+    "\u00a0": " ",   # non-breaking space
+}
+
+def _sanitize(text):
+    """Replace non-Latin-1 characters with ASCII equivalents."""
+    for orig, repl in _REPLACEMENTS.items():
+        text = text.replace(orig, repl)
+    # Encode to latin-1, replacing any remaining non-latin-1 chars
+    text = text.encode("latin-1", errors="replace").decode("latin-1")
+    return text
+
 def _mc(pdf, w, h, text):
     """multi_cell wrapper that resets x to left margin first."""
     pdf.set_x(pdf.l_margin)
@@ -132,6 +152,9 @@ def _write_content(pdf, title, content_text):
 
 def generate_pdf(company, cuit, title_text, content, include_disclaimer=True):
     """Generate a branded PDF report. Returns bytes."""
+    company = _sanitize(company)
+    cuit = _sanitize(cuit)
+    content = _sanitize(content)
     pdf = ReportPDF()
     pdf.alias_nb_pages()
     pdf.add_page()
