@@ -652,10 +652,15 @@ def phase_dd_auto(engine):
 
     with st.expander("Ver informe completo de Due Diligence"):
         st.markdown(f"""<div class="report-section">{dd_text}</div>""", unsafe_allow_html=True)
-        st.download_button("📥 Descargar Informe (MD)",
-                           data=dd_text.encode("utf-8"),
-                           file_name=f"due_diligence_auto_{company}.md",
-                           mime="text/markdown")
+        try:
+            from tools.pdf_report import make_dd_pdf
+            pdf_bytes = make_dd_pdf(company, cuit, dd_text)
+            st.download_button("📥 Descargar PDF",
+                               data=pdf_bytes,
+                               file_name=f"due_diligence_{company}.pdf",
+                               mime="application/pdf")
+        except Exception as e:
+            st.caption(f"No se pudo generar el PDF: {e}")
 
     st.markdown("---")
     c1, c2 = st.columns([3, 1])
@@ -769,37 +774,47 @@ def phase_done():
     with tab1:
         if dd_report:
             st.markdown(f"""<div class="report-section">{dd_report}</div>""", unsafe_allow_html=True)
-            st.download_button("📥 Descargar Due Diligence (MD)",
-                               data=dd_report.encode("utf-8"),
-                               file_name=f"due_diligence_{company}.md", mime="text/markdown")
+            try:
+                from tools.pdf_report import make_dd_pdf
+                pdf_bytes = make_dd_pdf(company, cuit, dd_report)
+                st.download_button("📥 Descargar Due Diligence (PDF)",
+                                   data=pdf_bytes,
+                                   file_name=f"due_diligence_{company}.pdf",
+                                   mime="application/pdf")
+            except Exception as e:
+                st.caption(f"No se pudo generar el PDF: {e}")
         else:
             st.warning("No hay informe de Due Diligence disponible.")
     with tab2:
         if diagnosis_report:
             st.markdown(f"""<div class="report-section">{diagnosis_report}</div>""", unsafe_allow_html=True)
-            st.download_button("📥 Descargar Diagn\u00f3stico (MD)",
-                               data=diagnosis_report.encode("utf-8"),
-                               file_name=f"diagnostico_{company}.md", mime="text/markdown")
+            try:
+                from tools.pdf_report import make_diagnosis_pdf
+                pdf_bytes = make_diagnosis_pdf(company, cuit, diagnosis_report)
+                st.download_button("📥 Descargar Diagn\u00f3stico (PDF)",
+                                   data=pdf_bytes,
+                                   file_name=f"diagnostico_{company}.pdf",
+                                   mime="application/pdf")
+            except Exception as e:
+                st.caption(f"No se pudo generar el PDF: {e}")
         else:
             st.warning("No hay diagn\u00f3stico disponible.")
     st.markdown("---")
-    report_combined = f"# Prisma Consulting | Klar Analytics \u2014 Informe Completo: {company}\n\n## 1. DUE DILIGENCE\n\n{dd_report or 'N/A'}\n\n## 2. DIAGN\u00d3STICO EMPRESARIAL\n\n{diagnosis_report or 'N/A'}"
     cols = st.columns(3)
     with cols[0]:
-        st.download_button("📥 Descargar Informe Completo (MD)",
-                           data=report_combined.encode("utf-8"),
-                           file_name=f"informe_completo_{company}.md", mime="text/markdown",
-                           use_container_width=True)
+        try:
+            from tools.pdf_report import make_complete_pdf
+            pdf_bytes = make_complete_pdf(company, cuit, dd_report or "", diagnosis_report or "")
+            st.download_button("📥 Descargar Informe Completo (PDF)",
+                               data=pdf_bytes,
+                               file_name=f"informe_completo_{company}.pdf",
+                               mime="application/pdf",
+                               use_container_width=True)
+        except Exception as e:
+            st.caption(f"No se pudo generar el PDF: {e}")
     with cols[1]:
-        combined_json = json.dumps({
-            "company": company,
-            "due_diligence": dd_report,
-            "diagnosis": diagnosis_report,
-        }, indent=2, ensure_ascii=False)
-        st.download_button("📥 Descargar JSON",
-                           data=combined_json.encode("utf-8"),
-                           file_name=f"informe_{company}.json", mime="application/json",
-                           use_container_width=True)
+        if st.button("📧 Enviar por correo", use_container_width=True):
+            st.info("Funcionalidad pr\u00f3ximamente disponible.")
     with cols[2]:
         if st.button("🔄 Nuevo an\u00e1lisis", use_container_width=True):
             for key in list(st.session_state.keys()):
