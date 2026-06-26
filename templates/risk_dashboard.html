@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="classification" content="CONFIDENCIAL">
+<meta name="generator" content="Due Diligence Engine v2.0">
+<title>Risk Dashboard — {{ sujeto.nombre }}</title>
+<style>
+:root {
+  --color-primary: #0F1B2D; --color-primary-light: #1A2D4A;
+  --color-accent: #0066CC; --color-accent-light: #E8F2FF;
+  --color-risk-low: #10B981; --color-risk-medium: #F59E0B; --color-risk-high: #EF4444; --color-risk-critical: #7F1D1D;
+  --color-bg: #0F1B2D; --color-bg-card: rgba(255,255,255,0.05);
+  --color-bg-card-hover: rgba(255,255,255,0.08);
+  --color-border: rgba(255,255,255,0.1);
+  --color-text-primary: #FFFFFF; --color-text-secondary: rgba(255,255,255,0.7); --color-text-muted: rgba(255,255,255,0.4);
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --card-radius: 16px; --card-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font-primary); color: var(--color-text-primary);
+  background: var(--color-bg); line-height: 1.5; -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.dash-header {
+  padding: var(--space-lg) var(--space-xl); display: flex; justify-content: space-between;
+  align-items: center; border-bottom: 1px solid var(--color-border); flex-wrap: wrap; gap: var(--space-md);
+}
+.dash-header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: var(--space-sm); }
+.dash-header h1 small { font-size: 0.813rem; font-weight: 400; color: var(--color-text-muted); }
+.dash-header .meta { font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: var(--space-md); align-items: center; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.status-dot.live { background: var(--color-risk-low); box-shadow: 0 0 8px rgba(16,185,129,0.5); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* DASHBOARD GRID */
+.dashboard { max-width: 1440px; margin: 0 auto; padding: var(--space-xl); display: grid; grid-template-columns: 280px 1fr 1fr; gap: var(--space-md); }
+@media (max-width: 1200px) { .dashboard { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 768px) { .dashboard { grid-template-columns: 1fr; padding: var(--space-md); } }
+
+/* OVERVIEW PANEL (left column) */
+.overview-panel { grid-column: 1; }
+@media (max-width: 1200px) { .overview-panel { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); } }
+@media (max-width: 768px) { .overview-panel { grid-template-columns: 1fr; } }
+
+.overview-card {
+  background: var(--color-bg-card); border: 1px solid var(--color-border);
+  border-radius: var(--card-radius); padding: var(--space-lg); margin-bottom: var(--space-md);
+  backdrop-filter: blur(20px); text-align: center;
+}
+.overview-card .score-main { font-size: 4rem; font-weight: 700; line-height: 1; margin-bottom: var(--space-xs); }
+.overview-card .level-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: var(--space-sm); }
+.risk-bar-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin: var(--space-sm) 0; }
+.risk-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+/* PANEL CARDS */
+.panel-card {
+  background: var(--color-bg-card); border: 1px solid var(--color-border);
+  border-radius: var(--card-radius); padding: var(--space-lg);
+  backdrop-filter: blur(20px); transition: background var(--transition, 0.2s);
+  position: relative; overflow: hidden;
+}
+.panel-card:hover { background: var(--color-bg-card-hover); }
+.panel-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: 4px 0 0 4px;
+}
+.panel-card.low::before { background: var(--color-risk-low); }
+.panel-card.medium::before { background: var(--color-risk-medium); }
+.panel-card.high::before { background: var(--color-risk-high); }
+.panel-card.critical::before { background: var(--color-risk-critical); }
+
+.panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-md); }
+.panel-title { font-size: 0.813rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.panel-score { font-size: 2rem; font-weight: 700; line-height: 1; }
+.panel-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-top: var(--space-sm); }
+.metric { }
+.metric-value { font-size: 1rem; font-weight: 600; }
+.metric-label { font-size: 0.688rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.trend { font-size: 0.75rem; display: flex; align-items: center; gap: 4px; }
+.trend.up { color: var(--color-risk-low); }
+.trend.down { color: var(--color-risk-high); }
+.trend.stable { color: var(--color-text-muted); }
+
+/* CARDS GRID */
+.cards-grid { grid-column: 2 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+@media (max-width: 1200px) { .cards-grid { grid-column: 1 / -1; } }
+@media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+
+/* WHEEL */
+.wheel-container { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+@media (max-width: 768px) { .wheel-container { grid-template-columns: 1fr; } }
+
+.wheel-card {
+  background: var(--color-bg-card); border: 1px solid var(--color-border);
+  border-radius: var(--card-radius); padding: var(--space-lg);
+  backdrop-filter: blur(20px); grid-column: 1;
+}
+.wheel-card h3 { font-size: 0.813rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-md); }
+
+.matrix-card {
+  background: var(--color-bg-card); border: 1px solid var(--color-border);
+  border-radius: var(--card-radius); padding: var(--space-lg);
+  backdrop-filter: blur(20px); grid-column: 2;
+}
+.matrix-card h3 { font-size: 0.813rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-md); }
+
+.risk-matrix { display: inline-block; }
+.matrix-row { display: flex; }
+.matrix-cell {
+  width: 80px; height: 48px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.688rem; font-weight: 700; text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.1); color: #fff;
+}
+.matrix-cell.low { background: rgba(16,185,129,0.3); }
+.matrix-cell.medium { background: rgba(245,158,11,0.3); }
+.matrix-cell.high { background: rgba(239,68,68,0.3); }
+.matrix-cell.critical { background: rgba(127,29,29,0.5); }
+.matrix-header { font-size: 0.6rem; color: var(--color-text-muted); background: rgba(255,255,255,0.05); }
+
+.source-link { font-size: 0.688rem; color: var(--color-accent); text-decoration: none; font-weight: 500; opacity: 0.7; transition: opacity 0.2s; }
+.source-link:hover { opacity: 1; text-decoration: underline; }
+
+.footer { text-align: center; padding: var(--space-lg); color: var(--color-text-muted); font-size: 0.75rem; border-top: 1px solid var(--color-border); }
+
+@media print {
+  body { background: #fff; color: #000; }
+  .panel-card, .overview-card, .wheel-card, .matrix-card { background: #fff; border: 1px solid #ccc; }
+  .panel-card::before { display: none; }
+  .dash-header { border-bottom-color: #ccc; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
+  @page { margin: 1cm; }
+}
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; }
+.badge-low { background: rgba(16,185,129,0.2); color: var(--color-risk-low); }
+.badge-medium { background: rgba(245,158,11,0.2); color: var(--color-risk-medium); }
+.badge-high { background: rgba(239,68,68,0.2); color: var(--color-risk-high); }
+.badge-critical { background: rgba(127,29,29,0.3); color: #EF4444; }
+
+/* SVG text color for dark bg */
+.wheel-card svg text { fill: var(--color-text-secondary); }
+.wheel-card svg text.label { fill: var(--color-text-primary); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="dash-header">
+  <h1>
+    ⚡ Risk Dashboard
+    <small>{{ sujeto.nombre }}</small>
+  </h1>
+  <div class="meta">
+    <span><span class="status-dot live"></span>Live</span>
+    <span>📅 {{ fecha_informe }}</span>
+    <span class="badge badge-{{ riesgo_general.nivel_class }}">{{ riesgo_general.nivel }}</span>
+    <a class="source-link" href="fuentes.html">Fuentes</a>
+  </div>
+</div>
+
+<div class="dashboard">
+
+<!-- LEFT: OVERVIEW -->
+<div class="overview-panel">
+  <div class="overview-card">
+    <div class="level-label">Riesgo General</div>
+    <div class="score-main" style="color:var(--color-{{ riesgo_general.nivel_class }})">{{ riesgo_general.score }}</div>
+    <span class="badge badge-{{ riesgo_general.nivel_class }}" style="font-size:0.75rem;padding:6px 16px;">{{ riesgo_general.nivel }}</span>
+    <div class="risk-bar-bg"><div class="risk-bar-fill" style="width:{{ riesgo_general.score }}%;background:var(--color-{{ riesgo_general.nivel_class }})"></div></div>
+    <div class="trend {{ riesgo_general.trend_class }}" style="justify-content:center;margin-top:var(--space-sm);">
+      {{ riesgo_general.trend_icon }} {{ riesgo_general.trend_text }}
+    </div>
+  </div>
+
+  {{ risk_wheel_svg }}
+
+  <div style="text-align:center;margin-top:var(--space-md);">
+    <a class="source-link" href="due_diligence.html" style="font-size:0.813rem;">📄 Ver Informe Completo</a>
+    <br>
+    <a class="source-link" href="fuentes.html" style="font-size:0.813rem;">🔗 Ver Fuentes Auditables</a>
+  </div>
+</div>
+
+<!-- RIGHT: CARDS GRID -->
+<div class="cards-grid">
+  {{ panel_cards_html }}
+</div>
+
+<!-- BOTTOM: WHEEL + MATRIX -->
+<div class="wheel-container">
+  <div class="wheel-card">
+    <h3>Risk Wheel</h3>
+    {{ risk_wheel_svg }}
+  </div>
+  <div class="matrix-card">
+    <h3>Matriz Impacto vs Probabilidad</h3>
+    <div style="text-align:center;">
+      <div class="risk-matrix">
+        <div class="matrix-row">
+          <div class="matrix-cell matrix-header"></div>
+          <div class="matrix-cell matrix-header">Bajo</div>
+          <div class="matrix-cell matrix-header">Medio</div>
+          <div class="matrix-cell matrix-header">Alto</div>
+          <div class="matrix-cell matrix-header">Crít</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell matrix-header">Prob ↑</div>
+          <div class="matrix-cell {{ matriz.alto_bajo }}">{{ matriz.alto_bajo }}</div>
+          <div class="matrix-cell {{ matriz.alto_medio }}">{{ matriz.alto_medio }}</div>
+          <div class="matrix-cell {{ matriz.alto_alto }}">{{ matriz.alto_alto }}</div>
+          <div class="matrix-cell {{ matriz.alto_critico }}">{{ matriz.alto_critico }}</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell matrix-header">Med</div>
+          <div class="matrix-cell {{ matriz.medio_bajo }}">{{ matriz.medio_bajo }}</div>
+          <div class="matrix-cell {{ matriz.medio_medio }}">{{ matriz.medio_medio }}</div>
+          <div class="matrix-cell {{ matriz.medio_alto }}">{{ matriz.medio_alto }}</div>
+          <div class="matrix-cell {{ matriz.medio_critico }}">{{ matriz.medio_critico }}</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell matrix-header">Baja</div>
+          <div class="matrix-cell {{ matriz.bajo_bajo }}">{{ matriz.bajo_bajo }}</div>
+          <div class="matrix-cell {{ matriz.bajo_medio }}">{{ matriz.bajo_medio }}</div>
+          <div class="matrix-cell {{ matriz.bajo_alto }}">{{ matriz.bajo_alto }}</div>
+          <div class="matrix-cell {{ matriz.bajo_critico }}">{{ matriz.bajo_critico }}</div>
+        </div>
+      </div>
+      <p style="margin-top:var(--space-sm);font-size:0.688rem;color:var(--color-text-muted);">← Probabilidad ↓ | Impacto →</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p>Due Diligence Engine v2.0 — {{ fecha_informe }} — CONFIDENCIAL</p>
+  <a class="source-link" href="due_diligence.html" target="_blank">Informe Completo</a> &nbsp;|&nbsp;
+  <a class="source-link" href="anexos.html" target="_blank">Anexos</a> &nbsp;|&nbsp;
+  <a class="source-link" href="fuentes.html" target="_blank">Fuentes</a>
+</div>
+
+</body>
+</html>

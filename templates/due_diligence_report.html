@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="classification" content="CONFIDENCIAL">
+<meta name="generator" content="Due Diligence Engine v2.0">
+<title>Informe de Due Diligence — {{ sujeto.nombre }}</title>
+<style>
+:root {
+  --color-primary: #0F1B2D;
+  --color-primary-light: #1A2D4A;
+  --color-primary-dark: #070E1A;
+  --color-accent: #0066CC;
+  --color-accent-light: #E8F2FF;
+  --color-accent-dark: #004C99;
+  --color-secondary: #00A3A3;
+  --color-secondary-light: #E0F7F7;
+  --color-tertiary: #6C5CE7;
+  --color-risk-low: #10B981;
+  --color-risk-medium: #F59E0B;
+  --color-risk-high: #EF4444;
+  --color-risk-critical: #7F1D1D;
+  --color-bg: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-bg-sidebar: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+  --color-text-inverse: #FFFFFF;
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Inter', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px;
+  --space-xl: 32px; --space-2xl: 48px; --space-3xl: 64px;
+  --card-bg: #FFFFFF; --card-border: 1px solid #E2E8F0;
+  --card-radius: 12px;
+  --card-shadow: 0 1px 3px rgba(15,27,45,0.08), 0 1px 2px rgba(15,27,45,0.06);
+  --card-shadow-hover: 0 4px 12px rgba(15,27,45,0.1);
+  --transition-fast: 150ms ease; --transition-base: 250ms ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font-primary); color: var(--color-text-primary);
+  background: var(--color-bg); line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+
+/* COVER */
+#cover {
+  position: relative; min-height: 100vh; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+#cover::before {
+  content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%;
+  background: radial-gradient(circle, rgba(0,102,204,0.1) 0%, transparent 70%);
+}
+.cover-overlay {
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.5;
+}
+.cover-content { position: relative; z-index: 1; text-align: center; max-width: 800px; padding: var(--space-3xl); }
+.cover-badge {
+  display: inline-block; padding: 8px 24px; border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 100px; color: var(--color-text-inverse); font-size: 0.75rem;
+  font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: var(--space-xl);
+  background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+}
+.cover-title {
+  font-size: 3rem; font-weight: 700; color: var(--color-text-inverse);
+  line-height: 1.15; margin-bottom: var(--space-md); letter-spacing: -0.02em;
+}
+.cover-subtitle {
+  font-size: 1.5rem; font-weight: 400; color: rgba(255,255,255,0.8);
+  margin-bottom: var(--space-2xl);
+}
+.cover-meta { display: flex; flex-wrap: wrap; gap: var(--space-md); justify-content: center; }
+.cover-meta p {
+  background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+  padding: 12px 20px; border-radius: 8px; color: rgba(255,255,255,0.9);
+  font-size: 0.875rem; border: 1px solid rgba(255,255,255,0.1);
+}
+.cover-meta strong { color: #fff; }
+
+/* NAV */
+.side-nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh; overflow-y: auto;
+  background: var(--color-bg-card); border-right: 1px solid var(--color-border);
+  z-index: 100; padding: var(--space-lg) 0; transform: translateX(-100%);
+  transition: transform var(--transition-base);
+}
+.side-nav.open { transform: translateX(0); }
+.side-nav-header {
+  padding: 0 var(--space-lg) var(--space-md); border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-sm);
+}
+.side-nav-header h3 { font-size: 0.875rem; color: var(--color-text-secondary); font-weight: 600; }
+.side-nav-item {
+  display: block; padding: 10px var(--space-lg); font-size: 0.875rem;
+  color: var(--color-text-secondary); text-decoration: none;
+  border-left: 3px solid transparent; transition: all var(--transition-fast);
+}
+.side-nav-item:hover { background: var(--color-bg-sidebar); color: var(--color-accent); }
+.side-nav-item.active { border-left-color: var(--color-accent); color: var(--color-accent); font-weight: 600; background: var(--color-accent-light); }
+.nav-toggle {
+  position: fixed; top: var(--space-md); left: var(--space-md); z-index: 101;
+  background: var(--color-bg-card); border: 1px solid var(--color-border);
+  border-radius: 8px; padding: 10px 14px; cursor: pointer; font-size: 1.25rem;
+  box-shadow: var(--card-shadow); display: none;
+}
+@media (min-width: 1024px) {
+  .side-nav { transform: translateX(0); }
+  .main-content { margin-left: 260px; }
+}
+
+/* MAIN CONTENT */
+.main-content { max-width: 1200px; margin: 0 auto; padding: var(--space-3xl); }
+
+/* SECTIONS */
+section { margin-bottom: var(--space-3xl); }
+.section-header {
+  margin-bottom: var(--space-xl); padding-bottom: var(--space-md);
+  border-bottom: 2px solid var(--color-accent);
+}
+.section-header h2 {
+  font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700;
+  color: var(--color-primary); letter-spacing: -0.02em;
+}
+.section-header .section-number {
+  display: inline-block; background: var(--color-accent); color: #fff;
+  width: 32px; height: 32px; border-radius: 8px; text-align: center;
+  line-height: 32px; font-size: 0.875rem; font-weight: 700; margin-right: var(--space-sm);
+}
+
+/* CARDS */
+.card {
+  background: var(--card-bg); border: var(--card-border); border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow); padding: var(--space-lg); margin-bottom: var(--space-md);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+.card:hover { box-shadow: var(--card-shadow-hover); transform: translateY(-2px); }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-md); padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border-light);
+}
+.card-header h3 { font-size: 1.125rem; font-weight: 600; color: var(--color-primary); }
+.card-body { font-size: 0.938rem; color: var(--color-text-secondary); line-height: 1.7; }
+
+/* KPI CARDS */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
+.kpi-card {
+  background: var(--card-bg); border: var(--card-border); border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow); padding: var(--space-lg); display: flex; align-items: flex-start; gap: var(--space-md);
+  transition: all var(--transition-base);
+}
+.kpi-card:hover { box-shadow: var(--card-shadow-hover); transform: translateY(-2px); }
+.kpi-icon {
+  width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.25rem; flex-shrink: 0;
+}
+.kpi-icon.low { background: rgba(16,185,129,0.12); color: var(--color-risk-low); }
+.kpi-icon.medium { background: rgba(245,158,11,0.12); color: var(--color-risk-medium); }
+.kpi-icon.high { background: rgba(239,68,68,0.12); color: var(--color-risk-high); }
+.kpi-icon.critical { background: rgba(127,29,29,0.12); color: var(--color-risk-critical); }
+.kpi-icon.neutral { background: rgba(0,102,204,0.1); color: var(--color-accent); }
+.kpi-content { flex: 1; }
+.kpi-value { font-size: 1.75rem; font-weight: 700; color: var(--color-text-primary); line-height: 1.2; display: block; }
+.kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-top: 2px; }
+.kpi-trend { font-size: 0.813rem; margin-top: 4px; display: block; }
+.kpi-trend.up { color: var(--color-risk-low); }
+.kpi-trend.down { color: var(--color-risk-high); }
+.kpi-trend.stable { color: var(--color-text-muted); }
+
+/* BADGES */
+.badge { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 0.688rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; border: 1px solid transparent; }
+.badge-low { background: #ECFDF5; color: #065F46; border-color: #10B981; }
+.badge-medium { background: #FFFBEB; color: #92400E; border-color: #F59E0B; }
+.badge-high { background: #FEF2F2; color: #991B1B; border-color: #EF4444; }
+.badge-critical { background: #FEE2E2; color: #7F1D1D; border-color: #7F1D1D; }
+.badge-info { background: var(--color-accent-light); color: var(--color-accent-dark); border-color: var(--color-accent); }
+.badge-neutral { background: #F1F5F9; color: #475569; border-color: #E2E8F0; }
+
+/* TABLES */
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border); margin-bottom: var(--space-md); }
+.data-table thead { background: #F8FAFC; }
+.data-table th { padding: 12px 16px; text-align: left; font-size: 0.75rem; font-weight: 700; color: var(--color-text-primary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--color-border); }
+.data-table td { padding: 12px 16px; font-size: 0.875rem; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border-light); }
+.data-table tbody tr:hover { background: #F1F5F9; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* RISK BARS */
+.risk-bar { height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.risk-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease-in-out; }
+.risk-bar-fill.low { background: var(--color-risk-low); }
+.risk-bar-fill.medium { background: var(--color-risk-medium); }
+.risk-bar-fill.high { background: var(--color-risk-high); }
+.risk-bar-fill.critical { background: var(--color-risk-critical); }
+
+/* SCORE CARDS */
+.score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-md); }
+.score-card {
+  background: var(--card-bg); border: 1px solid var(--color-border);
+  border-radius: var(--card-radius); padding: var(--space-lg);
+  border-left: 4px solid var(--color-risk-low); box-shadow: var(--card-shadow);
+}
+.score-card.medium { border-left-color: var(--color-risk-medium); }
+.score-card.high { border-left-color: var(--color-risk-high); }
+.score-card.critical { border-left-color: var(--color-risk-critical); }
+.score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm); }
+.score-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+.score-value.low { color: var(--color-risk-low); }
+.score-value.medium { color: var(--color-risk-medium); }
+.score-value.high { color: var(--color-risk-high); }
+.score-value.critical { color: var(--color-risk-critical); }
+.score-label { font-size: 0.875rem; font-weight: 600; color: var(--color-text-secondary); }
+
+/* SEMAPHORES */
+.semaphore { display: inline-flex; align-items: center; gap: var(--space-sm); padding: 6px 14px; border-radius: 100px; font-size: 0.813rem; font-weight: 600; }
+.semaphore.low { background: #ECFDF5; color: #065F46; }
+.semaphore.medium { background: #FFFBEB; color: #92400E; }
+.semaphore.high { background: #FEF2F2; color: #991B1B; }
+.semaphore.critical { background: #FEE2E2; color: #7F1D1D; }
+.semaphore-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.semaphore.low .semaphore-dot { background: var(--color-risk-low); }
+.semaphore.medium .semaphore-dot { background: var(--color-risk-medium); }
+.semaphore.high .semaphore-dot { background: var(--color-risk-high); }
+.semaphore.critical .semaphore-dot { background: var(--color-risk-critical); }
+
+/* TIMELINE */
+.timeline { position: relative; padding-left: var(--space-xl); }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--color-border); }
+.timeline-item { position: relative; margin-bottom: var(--space-lg); padding-left: var(--space-md); }
+.timeline-marker {
+  position: absolute; left: calc(-1 * var(--space-xl) + 2px); top: 4px;
+  width: 14px; height: 14px; border-radius: 50%; background: var(--color-bg-card);
+  border: 3px solid var(--color-accent); transform: translateX(-50%);
+}
+.timeline-marker.low { border-color: var(--color-risk-low); }
+.timeline-marker.medium { border-color: var(--color-risk-medium); }
+.timeline-marker.high { border-color: var(--color-risk-high); }
+.timeline-marker.critical { border-color: var(--color-risk-critical); }
+.timeline-date { font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+.timeline-content { font-size: 0.938rem; color: var(--color-text-secondary); }
+.timeline-content strong { color: var(--color-text-primary); }
+
+/* RISK MATRIX */
+.risk-matrix { display: inline-block; background: var(--card-bg); border: var(--card-border); border-radius: var(--card-radius); overflow: hidden; }
+.matrix-row { display: flex; }
+.matrix-cell {
+  width: 100px; height: 60px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  border: 1px solid var(--color-border); color: var(--color-text-primary);
+}
+.matrix-cell.low { background: #ECFDF5; color: #065F46; }
+.matrix-cell.medium { background: #FFFBEB; color: #92400E; }
+.matrix-cell.high { background: #FEF2F2; color: #991B1B; }
+.matrix-cell.critical { background: #7F1D1D; color: #fff; }
+.matrix-header { font-size: 0.688rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; background: #F8FAFC; }
+
+/* SOURCE LINKS */
+.source-link { font-size: 0.75rem; color: var(--color-accent); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.source-link:hover { text-decoration: underline; }
+.source-link::before { content: '🔗'; font-size: 0.688rem; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); }
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* FINDINGS TABLE */
+.findings-table { width: 100%; }
+.findings-table td:first-child { font-weight: 600; color: var(--color-text-primary); }
+.findings-table td:nth-child(2) { max-width: 300px; }
+
+/* RECOMMENDATION */
+.recommendation-box {
+  padding: var(--space-xl); border-radius: var(--card-radius); border: 2px solid;
+  text-align: center; margin: var(--space-xl) 0;
+}
+.recommendation-box.approve { background: #ECFDF5; border-color: var(--color-risk-low); }
+.recommendation-box.mitigate { background: #FFFBEB; border-color: var(--color-risk-medium); }
+.recommendation-box.reject { background: #FEF2F2; border-color: var(--color-risk-high); }
+.recommendation-box h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: var(--space-sm); }
+.recommendation-box.approve h3 { color: #065F46; }
+.recommendation-box.mitigate h3 { color: #92400E; }
+.recommendation-box.reject h3 { color: #991B1B; }
+.recommendation-box p { font-size: 1rem; color: var(--color-text-secondary); max-width: 600px; margin: 0 auto; }
+
+/* FOOTER */
+.report-footer {
+  margin-top: var(--space-3xl); padding: var(--space-xl) 0;
+  border-top: 1px solid var(--color-border); text-align: center;
+}
+.report-footer p { font-size: 0.75rem; color: var(--color-text-muted); }
+
+/* PRINT */
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .side-nav { display: none; }
+  .main-content { margin-left: 0; padding: 0; }
+  #cover { min-height: 100vh; break-after: page; }
+  .card { box-shadow: none; border: 1px solid #CBD5E1; break-inside: avoid; }
+  .card:hover { transform: none; box-shadow: none; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.8em; color: var(--color-text-muted); }
+  section { break-inside: avoid-page; }
+  @page { margin: 2cm; }
+}
+
+/* UTILITIES */
+.text-center { text-align: center; }
+.mt-lg { margin-top: var(--space-lg); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+.mb-xl { margin-bottom: var(--space-xl); }
+.confidential-watermark {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 12rem; font-weight: 900; color: rgba(239,68,68,0.04);
+  pointer-events: none; z-index: 0; letter-spacing: 0.1em;
+  user-select: none;
+}
+</style>
+</head>
+<body>
+
+<div class="confidential-watermark">CONFIDENCIAL</div>
+
+<!-- SIDE NAV -->
+<nav class="side-nav" id="sideNav">
+  <div class="side-nav-header">
+    <h3>Due Diligence</h3>
+    <small style="color:var(--color-text-muted);font-size:0.75rem;">{{ sujeto.nombre }}</small>
+  </div>
+  <a class="side-nav-item active" href="#resumen-ejecutivo">1. Resumen Ejecutivo</a>
+  <a class="side-nav-item" href="#dashboard">2. Dashboard</a>
+  <a class="side-nav-item" href="#riesgo-general">3. Riesgo General</a>
+  <a class="side-nav-item" href="#hallazgos-criticos">4. Hallazgos Críticos</a>
+  <a class="side-nav-item" href="#hallazgos-relevantes">5. Hallazgos Relevantes</a>
+  <a class="side-nav-item" href="#matriz-riesgos">6. Matriz de Riesgos</a>
+  <a class="side-nav-item" href="#linea-tiempo">7. Línea de Tiempo</a>
+  <a class="side-nav-item" href="#evaluacion-financiera">8. Evaluación Financiera</a>
+  <a class="side-nav-item" href="#evaluacion-tributaria">9. Evaluación Tributaria</a>
+  <a class="side-nav-item" href="#evaluacion-reputacional">10. Evaluación Reputacional</a>
+  <a class="side-nav-item" href="#evaluacion-legal">11. Evaluación Legal</a>
+  <a class="side-nav-item" href="#evaluacion-aml">12. Evaluación AML</a>
+  <a class="side-nav-item" href="#conclusiones">13. Conclusiones</a>
+  <a class="side-nav-item" href="#recomendaciones">14. Recomendaciones</a>
+  <div style="padding: var(--space-md) var(--space-lg); margin-top: auto; border-top: 1px solid var(--color-border);">
+    <a class="source-link" href="anexos.html" target="_blank">Ver Anexos</a>
+    <br><a class="source-link" href="fuentes.html" target="_blank">Ver Fuentes</a>
+  </div>
+</nav>
+
+<button class="nav-toggle" id="navToggle" onclick="toggleNav()">☰</button>
+
+<div class="main-content">
+
+<!-- COVER -->
+<section id="cover">
+  <div class="cover-overlay"></div>
+  <div class="cover-content">
+    <div class="cover-badge">CONFIDENCIAL</div>
+    <h1 class="cover-title">Informe de Due Diligence</h1>
+    <h2 class="cover-subtitle">{{ sujeto.nombre }}</h2>
+    <div class="cover-meta">
+      <p><strong>CUIT:</strong> {{ sujeto.cuit }}</p>
+      <p><strong>Fecha:</strong> {{ fecha_informe }}</p>
+      <p><strong>Preparado para:</strong> {{ cliente.nombre }}</p>
+      <p><strong>Clasificación:</strong> USO CONFIDENCIAL</p>
+    </div>
+  </div>
+</section>
+
+<!-- 1. EXECUTIVE SUMMARY -->
+<section id="resumen-ejecutivo">
+  <div class="section-header">
+    <span class="section-number">1</span>
+    <h2>Resumen Ejecutivo</h2>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon {{ riesgo_general.nivel_class }}">⚠</div>
+      <div class="kpi-content">
+        <span class="kpi-value">{{ riesgo_general.score }}</span>
+        <span class="kpi-label">Riesgo General</span>
+        <span class="kpi-trend {{ riesgo_general.trend_class }}">{{ riesgo_general.trend }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon neutral">🔍</div>
+      <div class="kpi-content">
+        <span class="kpi-value">{{ hallazgos_count }}</span>
+        <span class="kpi-label">Hallazgos</span>
+        <span class="kpi-trend">{{ hallazgos_criticos_count }} críticos</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon neutral">📄</div>
+      <div class="kpi-content">
+        <span class="kpi-value">{{ fuentes_count }}</span>
+        <span class="kpi-label">Fuentes Consultadas</span>
+        <span class="kpi-trend">{{ fuentes_oficiales }} oficiales</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon neutral">📅</div>
+      <div class="kpi-content">
+        <span class="kpi-value">{{ antiguedad }} años</span>
+        <span class="kpi-label">Antigüedad</span>
+        <span class="kpi-trend">Desde {{ fecha_constitucion }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <p>{{ resumen_ejecutivo }}</p>
+      <a class="source-link" href="fuentes.html#ref-resumen">Ver Fuentes</a>
+    </div>
+  </div>
+</section>
+
+<!-- 2. DASHBOARD -->
+<section id="dashboard">
+  <div class="section-header">
+    <span class="section-number">2</span>
+    <h2>Dashboard Ejecutivo</h2>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-header"><h3>Risk Wheel</h3></div>
+      <div class="card-body text-center">
+        {{ risk_wheel_svg }}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Score General</h3></div>
+      <div class="card-body text-center">
+        <div style="font-size:4rem;font-weight:700;color:var(--color-{{ riesgo_general.nivel_class }})">{{ riesgo_general.score }}</div>
+        <span class="badge badge-{{ riesgo_general.nivel_class }}">{{ riesgo_general.nivel }}</span>
+        <div class="risk-bar" style="margin-top:var(--space-md)"><div class="risk-bar-fill {{ riesgo_general.nivel_class }}" style="width:{{ riesgo_general.score }}%"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Matriz Impacto vs Probabilidad</h3></div>
+      <div class="card-body text-center">
+        <div class="risk-matrix">
+          <div class="matrix-row">
+            <div class="matrix-cell matrix-header"></div>
+            <div class="matrix-cell matrix-header">Bajo</div>
+            <div class="matrix-cell matrix-header">Medio</div>
+            <div class="matrix-cell matrix-header">Alto</div>
+            <div class="matrix-cell matrix-header">Crítico</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell matrix-header">Prob Alto</div>
+            <div class="matrix-cell {{ matriz.alto_bajo }}">{{ matriz.alto_bajo }}</div>
+            <div class="matrix-cell {{ matriz.alto_medio }}">{{ matriz.alto_medio }}</div>
+            <div class="matrix-cell {{ matriz.alto_alto }}">{{ matriz.alto_alto }}</div>
+            <div class="matrix-cell {{ matriz.alto_critico }}">{{ matriz.alto_critico }}</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell matrix-header">Prob Medio</div>
+            <div class="matrix-cell {{ matriz.medio_bajo }}">{{ matriz.medio_bajo }}</div>
+            <div class="matrix-cell {{ matriz.medio_medio }}">{{ matriz.medio_medio }}</div>
+            <div class="matrix-cell {{ matriz.medio_alto }}">{{ matriz.medio_alto }}</div>
+            <div class="matrix-cell {{ matriz.medio_critico }}">{{ matriz.medio_critico }}</div>
+          </div>
+          <div class="matrix-row">
+            <div class="matrix-cell matrix-header">Prob Bajo</div>
+            <div class="matrix-cell {{ matriz.bajo_bajo }}">{{ matriz.bajo_bajo }}</div>
+            <div class="matrix-cell {{ matriz.bajo_medio }}">{{ matriz.bajo_medio }}</div>
+            <div class="matrix-cell {{ matriz.bajo_alto }}">{{ matriz.bajo_alto }}</div>
+            <div class="matrix-cell {{ matriz.bajo_critico }}">{{ matriz.bajo_critico }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="score-grid mt-lg">
+    {{ score_cards_html }}
+  </div>
+</section>
+
+<!-- 3. RIESGO GENERAL -->
+<section id="riesgo-general">
+  <div class="section-header">
+    <span class="section-number">3</span>
+    <h2>Riesgo General</h2>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div style="display:flex;align-items:center;gap:var(--space-xl);flex-wrap:wrap;">
+        <div style="text-align:center;">
+          <div style="font-size:4rem;font-weight:700;color:var(--color-{{ riesgo_general.nivel_class }})">{{ riesgo_general.score }}</div>
+          <span class="badge badge-{{ riesgo_general.nivel_class }}" style="font-size:1rem;padding:8px 24px;">{{ riesgo_general.nivel }}</span>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:0.875rem;font-weight:600;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Score General</div>
+          <div class="risk-bar" style="height:16px;border-radius:8px;"><div class="risk-bar-fill {{ riesgo_general.nivel_class }}" style="width:{{ riesgo_general.score }}%;height:16px;border-radius:8px;"></div></div>
+          <p class="mt-md" style="color:var(--color-text-secondary);">{{ riesgo_general.descripcion }}</p>
+          <a class="source-link" href="fuentes.html#ref-riesgo-general">Ver Fuentes</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-md" style="font-size:1.125rem;font-weight:600;">Desglose por Factor</h3>
+  <div class="score-grid">
+    {{ score_cards_detalle_html }}
+  </div>
+</section>
+
+<!-- 4. HALLAZGOS CRÍTICOS -->
+<section id="hallazgos-criticos">
+  <div class="section-header">
+    <span class="section-number">4</span>
+    <h2>Hallazgos Críticos</h2>
+  </div>
+  {{ hallazgos_criticos_html }}
+  <a class="source-link" href="anexos.html#hallazgos-criticos">Ver detalle en Anexos</a>
+</section>
+
+<!-- 5. HALLAZGOS RELEVANTES -->
+<section id="hallazgos-relevantes">
+  <div class="section-header">
+    <span class="section-number">5</span>
+    <h2>Hallazgos Relevantes</h2>
+  </div>
+  {{ hallazgos_relevantes_html }}
+  <a class="source-link" href="anexos.html#hallazgos-relevantes">Ver detalle en Anexos</a>
+</section>
+
+<!-- 6. MATRIZ DE RIESGOS -->
+<section id="matriz-riesgos">
+  <div class="section-header">
+    <span class="section-number">6</span>
+    <h2>Matriz de Riesgos</h2>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><h3>Impacto vs Probabilidad</h3></div>
+      <div class="card-body text-center">{{ risk_matrix_html }}</div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Risk Wheel</h3></div>
+      <div class="card-body text-center">{{ risk_wheel_svg }}</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Tabla de Riesgos por Factor</h3></div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr>
+          <th>Factor</th><th>Score</th><th>Nivel</th><th>Peso</th><th>Contribución</th><th>Fuente</th>
+        </tr></thead>
+        <tbody>
+          {{ riesgos_tabla_html }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 7. LÍNEA DE TIEMPO -->
+<section id="linea-tiempo">
+  <div class="section-header">
+    <span class="section-number">7</span>
+    <h2>Línea de Tiempo</h2>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div class="timeline">
+        {{ timeline_html }}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. EVALUACIÓN FINANCIERA -->
+<section id="evaluacion-financiera">
+  <div class="section-header">
+    <span class="section-number">8</span>
+    <h2>Evaluación Financiera</h2>
+  </div>
+  <div class="score-grid">
+    <div class="score-card {{ financiero.nivel_class }}">
+      <div class="score-header">
+        <span class="score-value {{ financiero.nivel_class }}">{{ financiero.score }}</span>
+        <span class="badge badge-{{ financiero.nivel_class }}">{{ financiero.nivel }}</span>
+      </div>
+      <div class="score-label">Riesgo Financiero</div>
+      <div class="risk-bar"><div class="risk-bar-fill {{ financiero.nivel_class }}" style="width:{{ financiero.score }}%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Indicadores Financieros</h3></div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Indicador</th><th>Valor</th><th>Fuente</th></tr></thead>
+        <tbody>
+          {{ financiero_tabla_html }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{ financiero_grafico_html }}
+  <a class="source-link" href="fuentes.html#ref-financiero">Ver todas las fuentes financieras</a>
+</section>
+
+<!-- 9. EVALUACIÓN TRIBUTARIA -->
+<section id="evaluacion-tributaria">
+  <div class="section-header">
+    <span class="section-number">9</span>
+    <h2>Evaluación Tributaria</h2>
+  </div>
+  <div class="score-grid">
+    <div class="score-card {{ tributario.nivel_class }}">
+      <div class="score-header">
+        <span class="score-value {{ tributario.nivel_class }}">{{ tributario.score }}</span>
+        <span class="badge badge-{{ tributario.nivel_class }}">{{ tributario.nivel }}</span>
+      </div>
+      <div class="score-label">Riesgo Tributario</div>
+      <div class="risk-bar"><div class="risk-bar-fill {{ tributario.nivel_class }}" style="width:{{ tributario.score }}%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Situación Impositiva</h3></div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Impuesto / Régimen</th><th>Estado</th><th>Vigencia</th><th>Fuente</th></tr></thead>
+        <tbody>
+          {{ tributario_tabla_html }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{ tributario_grafico_html }}
+  <a class="source-link" href="fuentes.html#ref-tributario">Ver todas las fuentes tributarias</a>
+</section>
+
+<!-- 10. EVALUACIÓN REPUTACIONAL -->
+<section id="evaluacion-reputacional">
+  <div class="section-header">
+    <span class="section-number">10</span>
+    <h2>Evaluación Reputacional</h2>
+  </div>
+  <div class="score-grid">
+    <div class="score-card {{ reputacional.nivel_class }}">
+      <div class="score-header">
+        <span class="score-value {{ reputacional.nivel_class }}">{{ reputacional.score }}</span>
+        <span class="badge badge-{{ reputacional.nivel_class }}">{{ reputacional.nivel }}</span>
+      </div>
+      <div class="score-label">Riesgo Reputacional</div>
+      <div class="risk-bar"><div class="risk-bar-fill {{ reputacional.nivel_class }}" style="width:{{ reputacional.score }}%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Análisis de Medios y Reputación</h3></div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Hallazgo</th><th>Fuente</th><th>Fecha</th><th>Impacto</th><th>Ver Fuente</th></tr></thead>
+        <tbody>
+          {{ reputacional_tabla_html }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <a class="source-link" href="fuentes.html#ref-reputacional">Ver todas las fuentes reputacionales</a>
+</section>
+
+<!-- 11. EVALUACIÓN LEGAL -->
+<section id="evaluacion-legal">
+  <div class="section-header">
+    <span class="section-number">11</span>
+    <h2>Evaluación Legal</h2>
+  </div>
+  <div class="score-grid">
+    <div class="score-card {{ legal.nivel_class }}">
+      <div class="score-header">
+        <span class="score-value {{ legal.nivel_class }}">{{ legal.score }}</span>
+        <span class="badge badge-{{ legal.nivel_class }}">{{ legal.nivel }}</span>
+      </div>
+      <div class="score-label">Riesgo Legal</div>
+      <div class="risk-bar"><div class="risk-bar-fill {{ legal.nivel_class }}" style="width:{{ legal.score }}%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Antecedentes Legales</h3></div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Tipo</th><th>Detalle</th><th>Estado</th><th>Fuente</th></tr></thead>
+        <tbody>
+          {{ legal_tabla_html }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <a class="source-link" href="fuentes.html#ref-legal">Ver todas las fuentes legales</a>
+</section>
+
+<!-- 12. EVALUACIÓN AML -->
+<section id="evaluacion-aml">
+  <div class="section-header">
+    <span class="section-number">12</span>
+    <h2>Evaluación AML</h2>
+  </div>
+  <div class="score-grid">
+    <div class="score-card {{ aml.nivel_class }}">
+      <div class="score-header">
+        <span class="score-value {{ aml.nivel_class }}">{{ aml.score }}</span>
+        <span class="badge badge-{{ aml.nivel_class }}">{{ aml.nivel }}</span>
+      </div>
+      <div class="score-label">Riesgo AML</div>
+      <div class="risk-bar"><div class="risk-bar-fill {{ aml.nivel_class }}" style="width:{{ aml.score }}%"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Screening de Sanciones</h3></div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead><tr><th>Lista</th><th>Resultado</th><th>Fecha Consulta</th><th>Fuente</th></tr></thead>
+        <tbody>
+          {{ aml_tabla_html }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{ aml_grafico_html }}
+  <a class="source-link" href="fuentes.html#ref-aml">Ver todas las fuentes AML</a>
+</section>
+
+<!-- 13. CONCLUSIONES -->
+<section id="conclusiones">
+  <div class="section-header">
+    <span class="section-number">13</span>
+    <h2>Conclusiones</h2>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      {{ conclusiones_html }}
+      <p class="mt-md"><a class="source-link" href="fuentes.html#ref-conclusiones">Ver fuentes de todas las conclusiones</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- 14. RECOMENDACIONES -->
+<section id="recomendaciones">
+  <div class="section-header">
+    <span class="section-number">14</span>
+    <h2>Recomendaciones</h2>
+  </div>
+  
+  <div class="recommendation-box {{ recomendacion.clase }}">
+    <h3>{{ recomendacion.titulo }}</h3>
+    <p>{{ recomendacion.descripcion }}</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Medidas de Mitigación</h3></div>
+    <div class="card-body">
+      <ul style="padding-left:var(--space-lg);">
+        {{ mitigaciones_html }}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="report-footer">
+  <p><strong>Due Diligence Engine v2.0</strong> — {{ fecha_informe }}</p>
+  <p>Este informe es confidencial y de uso exclusivo del destinatario.</p>
+  <p>© {{ year }} — Todos los derechos reservados</p>
+  <p class="mt-md">
+    <a class="source-link" href="anexos.html" target="_blank">Anexos</a> &nbsp;|&nbsp; 
+    <a class="source-link" href="fuentes.html" target="_blank">Fuentes Auditables</a>
+  </p>
+</footer>
+
+</div><!-- /main-content -->
+
+<script>
+function toggleNav() { document.getElementById('sideNav').classList.toggle('open'); }
+document.addEventListener('click', function(e) {
+  var nav = document.getElementById('sideNav');
+  var btn = document.getElementById('navToggle');
+  if (window.innerWidth < 1024 && !nav.contains(e.target) && !btn.contains(e.target)) {
+    nav.classList.remove('open');
+  }
+});
+// Scroll spy
+var items = document.querySelectorAll('.side-nav-item');
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      items.forEach(function(i) { i.classList.remove('active'); });
+      var id = entry.target.getAttribute('id');
+      document.querySelector('.side-nav-item[href="#' + id + '"]')?.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('section[id]').forEach(function(s) { observer.observe(s); });
+</script>
+</body>
+</html>
