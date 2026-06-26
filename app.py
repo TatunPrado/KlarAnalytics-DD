@@ -13,6 +13,14 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 
 
 def _load_api_key() -> str:
+    # Cloud: check Streamlit secrets first
+    try:
+        key = st.secrets.get("gemini_api_key", "")
+        if len(key) > 10:
+            return key
+    except (Exception,):
+        pass
+    # Local: check config file
     if CONFIG_FILE.exists():
         try:
             data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
