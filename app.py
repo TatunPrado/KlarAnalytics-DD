@@ -246,21 +246,32 @@ INSTRUCCIONES ESPEC\u00cdFICAS:
 - Despu\u00e9s de cubrir todos los dominios, ofrec\u00e9 generar el Informe de Due Diligence.
 """
 
-def build_dd_auto_prompt(engine, company, cuit):
+def build_dd_auto_prompt(engine, company, cuit, datasource_text=""):
     ctx = engine.build_context(dimensions=["riesgos"])
     dd_agent = _find_in_list(ctx.get("agents", []), "due-diligence-officer")
     agent_block = _build_agent_prompt_block(dd_agent, ctx) if dd_agent else ""
+    
+    datasource_section = ""
+    if datasource_text:
+        datasource_section = f"""DATOS OFICIALES OBTENIDOS DE FUENTES EN TIEMPO REAL:
+Los siguientes datos fueron obtenidos autom\u00e1ticamente desde las APIs oficiales del BCRA.
+DEB\u00c9S usar estos datos en tu an\u00e1lisis, especialmente en las secciones de situaci\u00f3n financiera y crediticia.
+
+{datasource_text}
+
+"""
+    
     return f"""Sos un Oficial Senior de Due Diligence, Compliance e Inteligencia Corporativa de Prisma Consulting.
 
 Est\u00e1s realizando un DUE DILIGENCE AUTOM\u00c1TICO sobre: {company} (CUIT: {cuit})
 
 {agent_block}
 
-INSTRUCCIONES ESPEC\u00cdFICAS:
+{datasource_section}INSTRUCCIONES ESPEC\u00cdFICAS:
 - Gener\u00e1 un INFORME DE DUE DILIGENCE completo y estructurado sin hacerle preguntas al usuario.
-- Bas\u00e1 tu an\u00e1lisis en el nombre de la empresa, el CUIT (tipo de persona jur\u00eddica, jurisdicci\u00f3n), y tu conocimiento general sobre riesgos t\u00edpicos del sector.
-- Para cada dominio, indic\u00e1: qu\u00e9 se investig\u00f3, qu\u00e9 fuentes oficiales corresponden, cu\u00e1l es tu hallazgo o evaluaci\u00f3n preliminar, y el nivel de confianza de ese hallazgo.
-- Marc\u00e1 cada hallazgo con: \u2705 [INFO P\u00daBLICA] si pod\u00e9s determinarlo del nombre/CUIT, \u26a0\ufe0f [ESTIMADO] si es inferencia razonable, \U0001f50d [VERIFICAR] si requiere consultar fuente externa.
+- Bas\u00e1 tu an\u00e1lisis en los DATOS OFICIALES provistos arriba (si hay), el nombre de la empresa, el CUIT, y tu conocimiento general.
+- Para cada dominio, indic\u00e1: qu\u00e9 se investig\u00f3, qu\u00e9 fuentes oficiales corresponden, cu\u00e1l es tu hallazgo o evaluaci\u00f3n, y el nivel de confianza de ese hallazgo.
+- Marc\u00e1 cada hallazgo con: \u2705 [INFO CONFIRMADA] si se obtuvo de fuente oficial, \u2705 [INFO P\u00daBLICA] si pod\u00e9s determinarlo del nombre/CUIT, \u26a0\ufe0f [ESTIMADO] si es inferencia razonable, \U0001f50d [VERIFICAR] si requiere consultar fuente externa.
 - Inclu\u00ed al inicio una secci\u00f3n "RESUMEN DE HALLAZGOS" con 5-7 vi\u00f1etas de los puntos cr\u00edticos.
 
 ESTRUCTURA DEL INFORME:
@@ -602,11 +613,19 @@ def phase_dd_auto(engine):
     render_header(company, "DUE DILIGENCE AUTOM\u00c1TICO", "phase-dd")
 
     if not st.session_state.get("dd_report"):
-        with st.spinner("Ejecutando Due Diligence autom\u00e1tico..."):
+        datasource_text = ""
+        with st.spinner("Consultando BCRA (cheques + deudas)..."):
+            try:
+                from tools.data_sources import consultar_todo
+                datasource_text = consultar_todo(cuit)
+            except Exception as e:
+                datasource_text = f"(No se pudieron obtener datos de fuentes oficiales: {e})"
+
+        with st.spinner("Generando informe de Due Diligence con IA..."):
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=api_key)
-                prompt = build_dd_auto_prompt(engine, company, cuit)
+                prompt = build_dd_auto_prompt(engine, company, cuit, datasource_text)
                 model = genai.GenerativeModel("gemini-3.1-flash-lite")
                 resp = model.generate_content(prompt)
                 st.session_state.dd_report = resp.text
