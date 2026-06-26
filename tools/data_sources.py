@@ -2,6 +2,7 @@
 
 Currently supports:
 - BCRA Central de Deudores API (cheques rechazados + deudas)
+- CUIT Online (datos fiscales: raz\u00f3n social, domicilio, condici\u00f3n IVA, etc.)
 """
 
 import json
@@ -175,13 +176,68 @@ def formatear_deudas(data):
     return "\n".join(lines)
 
 
+def consultar_cuit_online(cuit):
+    """Consulta datos fiscales de una CUIT en CUIT Online (cuitonline.com)."""
+    try:
+        import cuitonline
+        results = cuitonline.search(cuit)
+        if not results:
+            return {"ok": False, "error": "No se encontr\u00f3 la CUIT en CUIT Online"}
+        p = results[0]
+        return {
+            "ok": True,
+            "nombre": p.nombre,
+            "cuit": p.cuit,
+            "tipo_persona": p.tipo_persona,
+            "direccion": p.direccion,
+            "provincia": p.provincia,
+            "localidad": p.localidad,
+            "nacionalidad": p.nacionalidad,
+            "monotributo": p.monotributo,
+            "empleador": p.empleador,
+        }
+    except ImportError:
+        return {"ok": False, "error": "cuitonline no est\u00e1 instalado"}
+    except Exception as e:
+        logging.warning("CUIT Online error: %s", e)
+        return {"ok": False, "error": str(e)}
+
+
+def formatear_fiscal(data):
+    """Formatea los datos fiscales de CUIT Online."""
+    if not data.get("ok"):
+        return "- CUIT Online: %s" % data.get("error", "No disponible")
+
+    lines = []
+    lines.append("- CUIT Online: Datos fiscales encontrados")
+    lines.append("  - Raz\u00f3n Social: %s" % data.get("nombre", "N/D"))
+    lines.append("  - CUIT Formateado: %s" % data.get("cuit", "N/D"))
+    lines.append("  - Tipo: %s" % data.get("tipo_persona", "N/D"))
+
+    if data.get("direccion"):
+        lines.append("  - Domicilio: %s" % data["direccion"])
+    if data.get("localidad"):
+        lines.append("  - Localidad: %s" % data["localidad"])
+    if data.get("provincia"):
+        lines.append("  - Provincia: %s" % data["provincia"])
+
+    lines.append("  - Monotributo: %s" % (data.get("monotributo") or "No"))
+    lines.append("  - Empleador: %s" % ("S\u00ed" if data.get("empleador") else "No"))
+
+    return "\n".join(lines)
+
+
 def consultar_todo(cuit):
     """Consulta todas las fuentes disponibles para una CUIT y devuelve texto formateado."""
     cheques = consultar_bcra_cheques(cuit)
     deudas = consultar_bcra_deudas(cuit)
-    
+    fiscal = consultar_cuit_online(cuit)
+
     parts = [
         "=== DATOS OBTENIDOS DE FUENTES OFICIALES ===",
+        "",
+        "[ARCA/AFIP - Datos Fiscales (v\u00eda CUIT Online)]",
+        formatear_fiscal(fiscal),
         "",
         "[BCRA - Cheques Rechazados]",
         formatear_cheques(cheques),
