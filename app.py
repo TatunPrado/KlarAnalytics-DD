@@ -250,6 +250,8 @@ def build_dd_auto_prompt(engine, company, cuit, datasource_text=""):
     ctx = engine.build_context(dimensions=["riesgos"])
     dd_agent = _find_in_list(ctx.get("agents", []), "due-diligence-officer")
     agent_block = _build_agent_prompt_block(dd_agent, ctx) if dd_agent else ""
+    from datetime import date as _dt
+    fecha = _dt.today().strftime("%d/%m/%Y")
     
     datasource_section = ""
     if datasource_text:
@@ -288,7 +290,7 @@ Descripci\u00f3n del perfil de riesgo general.
 - CUIT: {cuit}
 - Tipo de persona: [jur\u00eddica/f\u00edsica seg\u00fan CUIT]
 - Jurisdicci\u00f3n: [provincia seg\u00fan CUIT]
-- Fecha del an\u00e1lisis: [fecha actual]
+- Fecha del an\u00e1lisis: {fecha}
 
 ## An\u00e1lisis por Dominio
 
@@ -461,7 +463,9 @@ ESTRUCTURA:
 FORMATO: espa\u00f1ol, p\u00e1rrafos cortos, emojis con moderaci\u00f3n.
 """
 
-def build_diagnosis_report_prompt(engine, dims, transcript, dd_report):
+def build_diagnosis_report_prompt(engine, dims, transcript, dd_report, company):
+    from datetime import date as _dt
+    fecha = _dt.today().strftime("%d/%m/%Y")
     context = engine.build_context(dimensions=dims)
     ctx_section = _build_knowledge_section(context, dims)
     dims_str = ", ".join(DIMENSIONES.get(d, d) for d in dims)
@@ -478,7 +482,8 @@ TRANSCRIPCI\u00d3N DE LA ENTREVISTA:
 
 INSTRUCCIONES \u2014 Gener\u00e1 un informe en markdown con esta estructura:
 
-# Diagn\u00f3stico Empresarial \u2014 [Nombre de la empresa]
+# Diagn\u00f3stico Empresarial \u2014 {company}
+**Fecha de emisi\u00f3n: {fecha}**
 
 ## Resumen Ejecutivo
 2-3 p\u00e1rrafos citando los marcos usados y referenciando hallazgos del Due Diligence.
@@ -747,7 +752,7 @@ def phase_diagnosis(engine):
                 try:
                     import google.generativeai as genai
                     genai.configure(api_key=api_key)
-                    report_prompt = build_diagnosis_report_prompt(engine, dims, transcript, dd_report)
+                    report_prompt = build_diagnosis_report_prompt(engine, dims, transcript, dd_report, company)
                     model = genai.GenerativeModel("gemini-3.1-flash-lite")
                     resp = model.generate_content(report_prompt)
                     st.session_state.diagnosis_report = resp.text
