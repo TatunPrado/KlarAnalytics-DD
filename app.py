@@ -766,6 +766,7 @@ def phase_diagnosis(engine):
 
 def phase_done():
     company = st.session_state.company
+    cuit = st.session_state.cuit
     dd_report = st.session_state.dd_report
     diagnosis_report = st.session_state.diagnosis_report
     render_header(company, "COMPLETADO", "phase-done")
