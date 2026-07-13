@@ -838,15 +838,29 @@ def phase_dd_auto(engine):
 
     with st.expander("Ver informe completo de Due Diligence"):
         st.markdown(dd_text)
-        try:
-            from tools.pdf_report import make_dd_pdf
-            pdf_bytes = make_dd_pdf(company, cuit, dd_text)
-            st.download_button("📥 Descargar PDF",
-                               data=pdf_bytes,
-                               file_name=f"due_diligence_{company}.pdf",
-                               mime="application/pdf")
-        except Exception as e:
-            st.caption(f"No se pudo generar el PDF: {e}")
+
+    # Generate professional HTML report (primary format)
+    try:
+        from tools.html_report import generate_dd_html
+        html_report = generate_dd_html(company, cuit, dd_text)
+        st.components.v1.html(html_report, height=700, scrolling=True)
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.download_button(
+                "\U0001f4c4 Descargar Informe (HTML)",
+                data=html_report,
+                file_name="due_diligence_%s.html" % company,
+                mime="text/html",
+                use_container_width=True,
+            )
+        with col2:
+            st.markdown(
+                '<div style="padding:8px;font-size:0.75rem;color:#94a3b8;text-align:center">'
+                'Tambi\u00e9n pod\u00e9s usar <kbd>Ctrl+P</kbd> en el visor<br>para guardar como PDF</div>',
+                unsafe_allow_html=True,
+            )
+    except Exception as e:
+        st.caption("No se pudo generar el visor profesional: %s" % e)
 
     st.markdown("---")
     c1, c2 = st.columns([3, 1])
@@ -960,16 +974,29 @@ def phase_done():
     tab1, tab2 = st.tabs(["Informe de Due Diligence", "Diagn\u00f3stico Empresarial"])
     with tab1:
         if dd_report:
-            st.markdown(dd_report)
             try:
-                from tools.pdf_report import make_dd_pdf
-                pdf_bytes = make_dd_pdf(company, cuit, dd_report)
-                st.download_button("📥 Descargar Due Diligence (PDF)",
-                                   data=pdf_bytes,
-                                   file_name=f"due_diligence_{company}.pdf",
-                                   mime="application/pdf")
+                from tools.html_report import generate_dd_html
+                html_report = generate_dd_html(company, cuit, dd_report)
+                st.components.v1.html(html_report, height=700, scrolling=True)
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.download_button(
+                        "\U0001f4c4 Descargar Informe (HTML)",
+                        data=html_report,
+                        file_name="due_diligence_%s.html" % company,
+                        mime="text/html",
+                        use_container_width=True,
+                    )
+                with col2:
+                    st.markdown(
+                        '<div style="padding:8px;font-size:0.75rem;color:#94a3b8;text-align:center">'
+                        'Tambi\u00e9n pod\u00e9s usar <kbd>Ctrl+P</kbd> en el visor<br>para guardar como PDF</div>',
+                        unsafe_allow_html=True,
+                    )
             except Exception as e:
-                st.caption(f"No se pudo generar el PDF: {e}")
+                st.caption("Visor profesional no disponible: %s" % e)
+            with st.expander("Ver texto original del informe"):
+                st.markdown(dd_report)
         else:
             st.warning("No hay informe de Due Diligence disponible.")
     with tab2:
@@ -989,16 +1016,11 @@ def phase_done():
     st.markdown("---")
     cols = st.columns(3)
     with cols[0]:
-        try:
-            from tools.pdf_report import make_complete_pdf
-            pdf_bytes = make_complete_pdf(company, cuit, dd_report or "", diagnosis_report or "")
-            st.download_button("📥 Descargar Informe Completo (PDF)",
-                               data=pdf_bytes,
-                               file_name=f"informe_completo_{company}.pdf",
-                               mime="application/pdf",
-                               use_container_width=True)
-        except Exception as e:
-            st.caption(f"No se pudo generar el PDF: {e}")
+        st.markdown(
+            '<div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:8px;">'
+            'Us\u00e1 <kbd>Ctrl+P</kbd> en los visores HTML para exportar como PDF</div>',
+            unsafe_allow_html=True,
+        )
     with cols[1]:
         if st.button("📧 Enviar por correo", use_container_width=True):
             st.info("Funcionalidad pr\u00f3ximamente disponible.")
