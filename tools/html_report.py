@@ -424,7 +424,7 @@ def generate_dd_html(company, cuit, dd_text):
     <strong>Descargo de responsabilidad</strong><br><br>
     Este informe ha sido generado por inteligencia artificial de <strong>Prisma Consulting</strong>
     a traves de <strong>Klar Analytics</strong>. El analisis se basa en las respuestas brindadas
-    por el cliente y en datos obtenidos de fuentes publicas oficiales (BCRA, ARCA/AFIP).
+    por el cliente y en datos obtenidos de fuentes publicas oficiales (BCRA, ARCA/AFIP via cuitcuil.com).
     Este documento no constituye un analisis profundo ni una auditoria profesional,
     sino un diagnostico preliminar orientado a simplificar la toma de decisiones.
     Se recomienda verificar los hallazgos con un profesional calificado.

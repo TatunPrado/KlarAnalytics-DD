@@ -759,25 +759,25 @@ def phase_dd_auto(engine):
             deudas_text = "- BCRA Central de Deudores: Error inesperado: %s" % e
             _step_status(status, "\u274c BCRA - Central de Deudores: error de conexi\u00f3n", "error")
 
-        # ── Step 3: CUIT Online ──
-        _step_status(status, "\U0001f50d Consultando CUIT Online (datos fiscales)...", "running")
+        # ── Step 3: ARCA/AFIP ──
+        _step_status(status, "\U0001f50d Consultando ARCA/AFIP (datos fiscales)...", "running")
         fiscal_text = ""
         try:
-            from tools.data_sources import consultar_cuit_online, formatear_fiscal
-            fiscal_data = consultar_cuit_online(cuit)
+            from tools.data_sources import consultar_fiscal, formatear_fiscal
+            fiscal_data = consultar_fiscal(cuit)
             fiscal_text = formatear_fiscal(fiscal_data)
             if fiscal_data.get("ok"):
-                _step_status(status, "\u2705 CUIT Online: datos fiscales obtenidos", "complete")
+                _step_status(status, "\u2705 ARCA/AFIP: datos fiscales obtenidos (incluye IVA, actividades)", "complete")
             else:
-                _step_status(status, "\u26a0\ufe0f CUIT Online: %s" % fiscal_data.get("error", "error"), "error")
+                _step_status(status, "\u26a0\ufe0f ARCA/AFIP: %s" % fiscal_data.get("error", "error"), "error")
         except Exception as e:
-            fiscal_text = "- CUIT Online: Error inesperado: %s" % e
-            _step_status(status, "\u274c CUIT Online: error de conexi\u00f3n", "error")
+            fiscal_text = "- ARCA/AFIP: Error inesperado: %s" % e
+            _step_status(status, "\u274c ARCA/AFIP: error de conexi\u00f3n", "error")
 
         # ── Assemble datasource text ──
         datasource_text = """=== DATOS OBTENIDOS DE FUENTES OFICIALES ===
 
-[ARCA/AFIP - Datos Fiscales (via CUIT Online)]
+[ARCA/AFIP - Datos Fiscales]
 %s
 
 [BCRA - Cheques Rechazados]
