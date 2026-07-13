@@ -8,6 +8,7 @@ Currently supports:
 import json
 import logging
 import re
+import socket
 import urllib.request
 import urllib.error
 
@@ -39,7 +40,7 @@ def _fmt_cuit(raw):
 #  BCRA — Central de Deudores
 # ─────────────────────────────────────────────
 
-def _fetch_json(url, timeout=15):
+def _fetch_json(url, timeout=20):
     req = urllib.request.Request(url, headers={
         "User-Agent": _UA,
         "Accept": "application/json",
@@ -54,8 +55,16 @@ def _fetch_json(url, timeout=15):
                 return {"ok": False, "not_found": True, **json.loads(body)}
             except json.JSONDecodeError:
                 pass
-        logging.warning("BCRA API HTTP %d for %s: %s", e.code, url, body[:200])
-        return {"ok": False, "error": "HTTP %d" % e.code}
+        detail = body[:300] if body.strip() else e.reason
+        logging.warning("BCRA API HTTP %d for %s: %s", e.code, url, detail)
+        return {"ok": False, "error": "HTTP %d - %s" % (e.code, detail)}
+    except urllib.error.URLError as e:
+        reason = str(e.reason)
+        logging.warning("BCRA API URL error for %s: %s", url, reason)
+        return {"ok": False, "error": "Error de red: %s" % reason}
+    except socket.timeout:
+        logging.warning("BCRA API timeout for %s", url)
+        return {"ok": False, "error": "Tiempo de espera agotado (BCRA no responde)"}
     except Exception as e:
         logging.warning("BCRA API error for %s: %s", url, e)
         return {"ok": False, "error": str(e)}

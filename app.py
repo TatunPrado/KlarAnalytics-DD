@@ -741,8 +741,9 @@ def phase_dd_auto(engine):
             else:
                 _step_status(status, "\u26a0\ufe0f BCRA - Cheques Rechazados: %s" % cheques_data.get("error", "error"), "error")
         except Exception as e:
-            cheques_text = "- BCRA Cheques Rechazados: Error inesperado: %s" % e
-            _step_status(status, "\u274c BCRA - Cheques Rechazados: error de conexi\u00f3n", "error")
+            err = str(e).replace("(", "").replace(")", "")[:120]
+            cheques_text = "- BCRA Cheques Rechazados: Error inesperado: %s" % err
+            _step_status(status, "\u274c BCRA - Cheques Rechazados: %s" % err, "error")
 
         # ── Step 2: BCRA Deudas ──
         _step_status(status, "\U0001f4b0 Consultando BCRA - Central de Deudores...", "running")
@@ -756,8 +757,9 @@ def phase_dd_auto(engine):
             else:
                 _step_status(status, "\u26a0\ufe0f BCRA - Central de Deudores: %s" % deudas_data.get("error", "error"), "error")
         except Exception as e:
-            deudas_text = "- BCRA Central de Deudores: Error inesperado: %s" % e
-            _step_status(status, "\u274c BCRA - Central de Deudores: error de conexi\u00f3n", "error")
+            err = str(e).replace("(", "").replace(")", "")[:120]
+            deudas_text = "- BCRA Central de Deudores: Error inesperado: %s" % err
+            _step_status(status, "\u274c BCRA - Central de Deudores: %s" % err, "error")
 
         # ── Step 3: ARCA/AFIP ──
         _step_status(status, "\U0001f50d Consultando ARCA/AFIP (datos fiscales)...", "running")
@@ -771,8 +773,9 @@ def phase_dd_auto(engine):
             else:
                 _step_status(status, "\u26a0\ufe0f ARCA/AFIP: %s" % fiscal_data.get("error", "error"), "error")
         except Exception as e:
-            fiscal_text = "- ARCA/AFIP: Error inesperado: %s" % e
-            _step_status(status, "\u274c ARCA/AFIP: error de conexi\u00f3n", "error")
+            err = str(e).replace("(", "").replace(")", "")[:120]
+            fiscal_text = "- ARCA/AFIP: Error inesperado: %s" % err
+            _step_status(status, "\u274c ARCA/AFIP: %s" % err, "error")
 
         # ── Assemble datasource text ──
         datasource_text = """=== DATOS OBTENIDOS DE FUENTES OFICIALES ===
