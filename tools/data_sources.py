@@ -70,8 +70,14 @@ def _fetch_json(url, timeout=20):
         return {"ok": False, "error": str(e)}
 
 
+def _clean_cuit(raw):
+    """Extrae solo los dígitos de un CUIT (elimina guiones, espacios, etc.)."""
+    return re.sub(r"\D", "", raw)
+
+
 def consultar_bcra_cheques(cuit):
-    url = BCRA_CHEQUES_URL.format(cuit=cuit)
+    clean = _clean_cuit(cuit)
+    url = BCRA_CHEQUES_URL.format(cuit=clean)
     data = _fetch_json(url)
     if not data.get("ok") and data.get("not_found"):
         return {"ok": True, "identificacion": cuit, "denominacion": "Sin datos", "causales": []}
@@ -84,7 +90,8 @@ def consultar_bcra_cheques(cuit):
 
 
 def consultar_bcra_deudas(cuit):
-    url = BCRA_DEUDAS_URL.format(cuit=cuit)
+    clean = _clean_cuit(cuit)
+    url = BCRA_DEUDAS_URL.format(cuit=clean)
     data = _fetch_json(url)
     if not data.get("ok") and data.get("not_found"):
         return {"ok": True, "identificacion": cuit, "denominacion": "Sin datos", "periodos": []}
