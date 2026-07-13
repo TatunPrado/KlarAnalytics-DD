@@ -272,18 +272,94 @@ Est\u00e1s realizando un DUE DILIGENCE AUTOM\u00c1TICO sobre: {company} (CUIT: {
 {datasource_section}INSTRUCCIONES ESPEC\u00cdFICAS:
 - Gener\u00e1 un INFORME DE DUE DILIGENCE completo y estructurado sin hacerle preguntas al usuario.
 - Bas\u00e1 tu an\u00e1lisis en los DATOS OFICIALES provistos arriba (si hay), el nombre de la empresa, el CUIT, y tu conocimiento general.
-- Para cada dominio, indic\u00e1: qu\u00e9 se investig\u00f3, qu\u00e9 fuentes oficiales corresponden, cu\u00e1l es tu hallazgo o evaluaci\u00f3n, y el nivel de confianza de ese hallazgo.
+- Para cada factor de riesgo, asign\u00e1 un SCORE NUM\u00c9RICO 0-100 y un NIVEL (Bajo / Bajo-Medio / Medio / Alto / Cr\u00edtico) seg\u00fan la escala y los pesos definidos abajo.
 - Marc\u00e1 cada hallazgo con: \u2705 [INFO CONFIRMADA] si se obtuvo de fuente oficial, \u2705 [INFO P\u00daBLICA] si pod\u00e9s determinarlo del nombre/CUIT, \u26a0\ufe0f [ESTIMADO] si es inferencia razonable, \U0001f50d [VERIFICAR] si requiere consultar fuente externa.
 - Inclu\u00ed al inicio una secci\u00f3n "RESUMEN DE HALLAZGOS" con 5-7 vi\u00f1etas de los puntos cr\u00edticos.
 
-ESTRUCTURA DEL INFORME:
+== SISTEMA DE SCORING ==
+
+### Escala de Riesgo
+| Nivel | Rango | Color | Descripci\u00f3n |
+|-------|-------|-------|-------------|
+| Bajo | 0\u201320 | Verde | Sin hallazgos relevantes |
+| Bajo-Medio | 21\u201340 | Verde claro | Hallazgos menores, controlables |
+| Medio | 41\u201360 | Amarillo | Hallazgos que requieren monitoreo |
+| Alto | 61\u201380 | Rojo | Hallazgos graves, requieren acci\u00f3n |
+| Cr\u00edtico | 81\u2013100 | Rojo oscuro | Hallazgos que impiden continuar |
+
+### Factores de Riesgo (7 dimensiones)
+
+**1. Financiero (Peso: 20%)**
+- Clasificaci\u00f3n BCRA (1\u20136): 6\u219280, 5\u219265, 4\u219250, 3\u219235, 2\u219220, 1\u219210
+- Cheques rechazados: frecuencia + monto
+- Relaci\u00f3n deuda/patrimonio: >2\u219270, 1-2\u219250, <1\u219220
+- Resultado del ejercicio: P\u00e9rdida\u219270, equilibrio\u219240, super\u00e1vit\u219210
+- Sanciones cambiarias: S\u00ed\u219280, No\u21920
+
+**2. Tributario (Peso: 15%)**
+- Estado ARCA: Inactivo\u2192100
+- Deudas fiscales p\u00fablicas: existencia\u219260+
+- Embargos fiscales: S\u00ed\u219280
+- Categor\u00eda (Monotributo vs RI)
+- IIBB / Convenio Multilateral: incumplimiento\u219270
+
+**3. Legal (Peso: 20%)**
+- Causas judiciales activas: cantidad + gravedad
+- Embargos / inhibiciones: S\u00ed\u219270+
+- Sumarios administrativos
+- Condenas previas: S\u00ed\u219290
+
+**4. AML / Sanciones (Peso: 20%)**
+- Coincidencia OFAC/ONU/UE: directa\u2192100
+- Posible coincidencia fon\u00e9tica: 40
+- PEP (Persona Pol\u00edticamente Expuesta): S\u00ed\u219250
+- Estructura societaria compleja sin justificaci\u00f3n: 60
+- Jurisdicci\u00f3n no cooperante: 50
+
+**5. Reputacional (Peso: 10%)**
+- Noticias negativas graves: cantidad + gravedad
+- Controversias p\u00fablicas: S\u00ed\u219260+
+- Antig\u00fcedad positiva (+5 a\u00f1os sin incidentes): -20 puntos
+
+**6. Operativo (Peso: 5%)**
+- Dependencia de un solo cliente/proveedor: >50%\u219265
+- Concentraci\u00f3n geogr\u00e1fica: una sola locaci\u00f3n\u219240
+- Antig\u00fcedad: <1 a\u00f1o\u219260
+- Cantidad de empleados: <5\u219240
+
+**7. Compliance / Integridad (Peso: 10%)**
+- PEP o v\u00ednculos con PEP: S\u00ed\u219260+
+- Contrataciones con el Estado sin control: monto elevado\u219260
+- Inhabilitaciones para contratar: S\u00ed\u219280
+- Causas de corrupci\u00f3n / soborno: S\u00ed\u219290
+
+### C\u00e1lculo del Riesgo General
+RGeneral = (Financiero x 0.20) + (Tributario x 0.15) + (Legal x 0.20) + (AML x 0.20) + (Reputacional x 0.10) + (Operativo x 0.05) + (Compliance x 0.10)
+
+### Matriz Impacto vs Probabilidad
+```
+                IMPACTO
+            Bajo  Medio  Alto  Cr\u00edtico
+Prob Alto   Medio  Alto  Cr\u00edt  Cr\u00edt
+Prob Medio  Bajo   Medio  Alto  Cr\u00edt
+Prob Bajo   Bajo   Bajo   Medio  Alto
+```
+
+### Recomendaci\u00f3n Final
+- 0\u201325: APROBAR
+- 26\u201350: APROBAR CON MITIGACIONES
+- 51\u201375: RECHAZAR (requiere revisi\u00f3n de Compliance)
+- 76\u2013100: RECHAZAR
+
+== ESTRUCTURA DEL INFORME ==
+
 # Informe de Due Diligence Autom\u00e1tico \u2014 {company}
 
 ## Resumen de Hallazgos
 [5-7 vi\u00f1etas con hallazgos cr\u00edticos]
 
 ## Resumen Ejecutivo
-Descripci\u00f3n del perfil de riesgo general.
+Descripci\u00f3n del perfil de riesgo general, score general, nivel y recomendaci\u00f3n.
 
 ## Ficha del Sujeto
 - Raz\u00f3n Social: {company}
@@ -292,55 +368,65 @@ Descripci\u00f3n del perfil de riesgo general.
 - Jurisdicci\u00f3n: [provincia seg\u00fan CUIT]
 - Fecha del an\u00e1lisis: {fecha}
 
-## An\u00e1lisis por Dominio
+## An\u00e1lisis por Factor de Riesgo
 
-### 1. Informaci\u00f3n Legal
-- Tipo societario probable
+### 1. Riesgo Financiero (Peso: 20%) \u2014 Score: [0-100] \u2014 Nivel: [Bajo/Bajo-Medio/Medio/Alto/Cr\u00edtico]
+- An\u00e1lisis de datos BCRA, perfil crediticio, cheques rechazados
+- Fuentes consultadas
+- Hallazgos y nivel de confianza
+
+### 2. Riesgo Tributario (Peso: 15%) \u2014 Score: [0-100] \u2014 Nivel: [...]
+- Situaci\u00f3n ARCA probable, deudas fiscales
 - Fuentes a consultar
 - Hallazgos y nivel de confianza
 
-### 2. Situaci\u00f3n Tributaria
-- Situaci\u00f3n ARCA probable
+### 3. Riesgo Legal (Peso: 20%) \u2014 Score: [0-100] \u2014 Nivel: [...]
+- Tipo societario, causas judiciales, embargos
 - Fuentes a consultar
 - Hallazgos y nivel de confianza
 
-### 3. Situaci\u00f3n Financiera
-- Perfil crediticio probable
-- Fuentes a consultar
-- Hallazgos y nivel de confianza
-
-### 4. Compliance & AML
-- Listas restrictivas
+### 4. Riesgo AML / Sanciones (Peso: 20%) \u2014 Score: [0-100] \u2014 Nivel: [...]
+- Listas restrictivas (OFAC, ONU, UE, UIF)
 - PEP / UIF
-- Riesgo AML
 - Hallazgos y nivel de confianza
 
-### 5. Reputaci\u00f3n & OSINT
-- Noticias y litigios
-- Riesgo reputacional
+### 5. Riesgo Reputacional (Peso: 10%) \u2014 Score: [0-100] \u2014 Nivel: [...]
+- Noticias, litigios, presencia online
 - Hallazgos y nivel de confianza
 
-### 6. Contrataciones & PI
-- Contratos con el Estado
-- Marcas y dominios
+### 6. Riesgo Operativo (Peso: 5%) \u2014 Score: [0-100] \u2014 Nivel: [...]
+- Dependencia, concentraci\u00f3n, antig\u00fcedad
 - Hallazgos y nivel de confianza
 
-## Matriz de Riesgos
-| Factor | Nivel | Score | Fundamento |
-|--------|-------|-------|------------|
-| Legal | Bajo/Medio/Alto | 0-100 | ... |
-| Tributario | ... | ... | ... |
-| Financiero | ... | ... | ... |
-| Compliance | ... | ... | ... |
-| Reputacional | ... | ... | ... |
-| Contractual | ... | ... | ... |
+### 7. Riesgo Compliance (Peso: 10%) \u2014 Score: [0-100] \u2014 Nivel: [...]
+- PEP, contrataciones Estado, inhabilitaciones
+- Hallazgos y nivel de confianza
 
-## Score General de Riesgo: [0-100]
+## Matriz de Riesgos Consolidada
+| Factor | Score | Nivel | Peso | Contribuci\u00f3n |
+|--------|-------|-------|------|----------------|
+| Financiero | 0-100 | ... | 20% | score x 0.20 |
+| Tributario | 0-100 | ... | 15% | score x 0.15 |
+| Legal | 0-100 | ... | 20% | score x 0.20 |
+| AML | 0-100 | ... | 20% | score x 0.20 |
+| Reputacional | 0-100 | ... | 10% | score x 0.10 |
+| Operativo | 0-100 | ... | 5% | score x 0.05 |
+| Compliance | 0-100 | ... | 10% | score x 0.10 |
+| **General** | **0-100** | **...** | **100%** | **suma** |
+
+## Matriz Impacto vs Probabilidad
+[Inclu\u00ed la matriz con el resultado estimado]
+
+## Score General de Riesgo: [0-100] \u2014 [Bajo/Bajo-Medio/Medio/Alto/Cr\u00edtico]
+
+## Recomendaci\u00f3n
+[APROBAR / APROBAR CON MITIGACIONES / RECHAZAR]
+[Lista de mitigaciones requeridas si corresponde]
 
 ## Pr\u00f3ximos Pasos
 Verificaciones que un analista humano debe realizar.
 
-EXTENSI\u00d3N: 500-1000 palabras. S\u00e9 concreto, no gen\u00e9rico.
+EXTENSI\u00d3N: 600-1200 palabras. S\u00e9 concreto, no gen\u00e9rico. Inclu\u00ed scores num\u00e9ricos en CADA factor.
 """
 
 def build_dd_report_prompt(company, cuit, transcript):
