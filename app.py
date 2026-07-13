@@ -694,6 +694,15 @@ def page_setup(engine):
             st.session_state.phase = "dd_auto" if do_dd else "diagnosis"
             st.rerun()
 
+def _step_status(status, label, state="running"):
+    """Update a st.status step. state: 'running', 'complete', 'error'."""
+    if state == "running":
+        status.update(label=label, state="running")
+    elif state == "complete":
+        status.update(label=label, state="complete")
+    elif state == "error":
+        status.update(label=label, state="error")
+
 def phase_dd_auto(engine):
     company = st.session_state.company
     cuit = st.session_state.cuit
@@ -704,15 +713,75 @@ def phase_dd_auto(engine):
     render_header(company, "DUE DILIGENCE AUTOM\u00c1TICO", "phase-dd")
 
     if not st.session_state.get("dd_report"):
-        datasource_text = ""
-        with st.spinner("Consultando BCRA (cheques + deudas)..."):
-            try:
-                from tools.data_sources import consultar_todo
-                datasource_text = consultar_todo(cuit)
-            except Exception as e:
-                datasource_text = f"(No se pudieron obtener datos de fuentes oficiales: {e})"
+        status = st.status("Iniciando Due Diligence...", expanded=True)
 
-        with st.spinner("Generando informe de Due Diligence con IA..."):
+        # ── Step 1: BCRA Cheques ──
+        _step_status(status, "\U0001f4b0 Consultando BCRA - Cheques Rechazados...", "running")
+        cheques_text = ""
+        try:
+            from tools.data_sources import consultar_bcra_cheques, formatear_cheques
+            cheques_data = consultar_bcra_cheques(cuit)
+            cheques_text = formatear_cheques(cheques_data)
+            if cheques_data.get("ok"):
+                _step_status(status, "\u2705 BCRA - Cheques Rechazados: consultado correctamente", "complete")
+            else:
+                _step_status(status, "\u26a0\ufe0f BCRA - Cheques Rechazados: %s" % cheques_data.get("error", "error"), "error")
+        except Exception as e:
+            cheques_text = "- BCRA Cheques Rechazados: Error inesperado: %s" % e
+            _step_status(status, "\u274c BCRA - Cheques Rechazados: error de conexi\u00f3n", "error")
+
+        # ── Step 2: BCRA Deudas ──
+        _step_status(status, "\U0001f4b0 Consultando BCRA - Central de Deudores...", "running")
+        deudas_text = ""
+        try:
+            from tools.data_sources import consultar_bcra_deudas, formatear_deudas
+            deudas_data = consultar_bcra_deudas(cuit)
+            deudas_text = formatear_deudas(deudas_data)
+            if deudas_data.get("ok"):
+                _step_status(status, "\u2705 BCRA - Central de Deudores: consultado correctamente", "complete")
+            else:
+                _step_status(status, "\u26a0\ufe0f BCRA - Central de Deudores: %s" % deudas_data.get("error", "error"), "error")
+        except Exception as e:
+            deudas_text = "- BCRA Central de Deudores: Error inesperado: %s" % e
+            _step_status(status, "\u274c BCRA - Central de Deudores: error de conexi\u00f3n", "error")
+
+        # ── Step 3: CUIT Online ──
+        _step_status(status, "\U0001f50d Consultando CUIT Online (datos fiscales)...", "running")
+        fiscal_text = ""
+        try:
+            from tools.data_sources import consultar_cuit_online, formatear_fiscal
+            fiscal_data = consultar_cuit_online(cuit)
+            fiscal_text = formatear_fiscal(fiscal_data)
+            if fiscal_data.get("ok"):
+                _step_status(status, "\u2705 CUIT Online: datos fiscales obtenidos", "complete")
+            else:
+                _step_status(status, "\u26a0\ufe0f CUIT Online: %s" % fiscal_data.get("error", "error"), "error")
+        except Exception as e:
+            fiscal_text = "- CUIT Online: Error inesperado: %s" % e
+            _step_status(status, "\u274c CUIT Online: error de conexi\u00f3n", "error")
+
+        # ── Assemble datasource text ──
+        datasource_text = """=== DATOS OBTENIDOS DE FUENTES OFICIALES ===
+
+[ARCA/AFIP - Datos Fiscales (via CUIT Online)]
+%s
+
+[BCRA - Cheques Rechazados]
+%s
+
+[BCRA - Central de Deudores]
+%s
+
+=== FIN DE DATOS OFICIALES ===""" % (fiscal_text, cheques_text, deudas_text)
+
+        # ── Step 4: Gemini DD generation (with retries) ──
+        max_retries = 3
+        last_error = None
+        for attempt in range(1, max_retries + 1):
+            label = "Generando informe de Due Diligence con IA%s..." % (
+                " (intento %d/%d)" % (attempt, max_retries) if max_retries > 1 else ""
+            )
+            _step_status(status, label, "running")
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=api_key)
@@ -720,10 +789,20 @@ def phase_dd_auto(engine):
                 model = genai.GenerativeModel("gemini-3.1-flash-lite")
                 resp = model.generate_content(prompt)
                 st.session_state.dd_report = resp.text
+                _step_status(status, "\u2705 Informe de Due Diligence generado exitosamente", "complete")
+                status.update(state="complete")
                 st.rerun()
             except Exception as e:
-                st.error(f"Error ejecutando Due Diligence: {e}")
-                return
+                last_error = e
+                if attempt < max_retries:
+                    _step_status(status, "\u26a0\ufe0f Intento %d/%d fall\u00f3: %s. Reintentando..." % (attempt, max_retries, e), "error")
+                    import time
+                    time.sleep(2 ** attempt)  # exponential backoff
+                else:
+                    _step_status(status, "\u274c Error al generar el informe de Due Diligence", "error")
+                    status.update(state="error")
+                    st.error("Error ejecutando Due Diligence despu\u00e9s de %d intentos: %s" % (max_retries, last_error))
+                    return
 
     # Show summary of findings
     dd_text = st.session_state.dd_report
