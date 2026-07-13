@@ -805,7 +805,6 @@ def phase_dd_auto(engine):
                 st.session_state.dd_report = resp.text
                 _step_status(status, "\u2705 Informe de Due Diligence generado exitosamente", "complete")
                 status.update(state="complete")
-                st.rerun()
             except Exception as e:
                 last_error = e
                 if attempt < max_retries:
@@ -831,8 +830,11 @@ def phase_dd_auto(engine):
 
     st.markdown(f"""<div class="card" style="border-left:4px solid {BLUE_500};">
         <h3 style="margin-top:0;color:{BLUE_800};">\U0001f4cb Resumen de Hallazgos</h3>
-        {summary_section or dd_text[:600]}
     </div>""", unsafe_allow_html=True)
+    if summary_section:
+        st.markdown(summary_section)
+    else:
+        st.markdown(dd_text[:600])
 
     with st.expander("Ver informe completo de Due Diligence"):
         st.markdown(dd_text)

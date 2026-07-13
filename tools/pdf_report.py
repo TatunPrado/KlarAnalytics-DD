@@ -192,46 +192,53 @@ def _cover_page(pdf, company, cuit, title_text, scores):
         pdf.cell(50, 5, "RIESGO " + label.upper(), align="C")
 
 
-def _score_card(pdf, factor_name, score, y_start, w=85):
+def _score_card(pdf, factor_name, score, y_start, w=CW):
     label = _risk_label(score) if score is not None else "N/D"
     color, _ = _risk_color(score) if score is not None else (GRAY, MUTED_BG)
     display_score = str(score) if score is not None else "--"
+    h = 24
 
+    # Card background
+    pdf.set_fill_color(*WHITE)
     pdf.set_draw_color(*BORDER)
-    pdf.rect(LM, y_start, w, 28, "D")
+    pdf.rect(LM, y_start, w, h, "DF")
+
+    # Left accent bar
+    pdf.set_fill_color(*color)
+    pdf.rect(LM, y_start, 3, h, "F")
 
     # Score number
     pdf.set_text_color(*color)
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.set_xy(LM + 6, y_start + 4)
-    pdf.cell(20, 8, display_score)
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.set_xy(LM + 10, y_start + 3)
+    pdf.cell(16, 7, display_score)
 
     # Label
     pdf.set_text_color(*DARK)
     pdf.set_font("Helvetica", "B", 7)
-    pdf.set_xy(LM + 6, y_start + 14)
-    pdf.cell(w - 12, 4, factor_name.upper())
+    pdf.set_xy(LM + 10, y_start + 12)
+    pdf.cell(w - 55, 4, factor_name.upper())
 
     # Risk bar
     if score is not None:
-        bar_x = LM + 6
-        bar_y = y_start + 20
-        bar_w = w - 12
+        bar_x = LM + 10
+        bar_y = y_start + 18
+        bar_w = w - 55
         pdf.set_fill_color(226, 232, 240)
-        pdf.rect(bar_x, bar_y, bar_w, 4, "F")
+        pdf.rect(bar_x, bar_y, bar_w, 3, "F")
         pdf.set_fill_color(*color)
         fill_w = max(bar_w * score / 100, 3)
-        pdf.rect(bar_x, bar_y, fill_w, 4, "F")
+        pdf.rect(bar_x, bar_y, fill_w, 3, "F")
 
     # Badge
     badge_w = pdf.get_string_width(label) + 8
+    if badge_w < 20:
+        badge_w = 20
     pdf.set_fill_color(*color)
     pdf.set_text_color(*WHITE)
     pdf.set_font("Helvetica", "B", 6)
-    badge_x = LM + w - badge_w - 6
-    if badge_x < LM + 32:
-        badge_x = LM + 32
-    pdf.set_xy(badge_x, y_start + 4)
+    badge_x = LM + w - badge_w - 8
+    pdf.set_xy(badge_x, y_start + 5)
     pdf.cell(badge_w, 6, label, fill=True, align="C")
 
 
@@ -347,33 +354,13 @@ def generate_pdf(company, cuit, title_text, content, include_disclaimer=True):
         _mc(pdf, CW, 6, "RESUMEN DE RIESGOS")
         pdf.ln(3)
 
-        col_w = 85
-        gap = 8
-        left_x = LM
-        right_x = LM + col_w + gap
-
-        rows = (len(factors_with_scores) + 1) // 2
-        for row in range(rows):
+        for key, name in factors_with_scores:
+            score = scores.get(key)
             y = pdf.get_y()
-            idx1 = row * 2
-            idx2 = row * 2 + 1
+            _score_card(pdf, name, score, y)
+            pdf.set_y(y + 27)
 
-            score1 = scores.get(factors_with_scores[idx1][0])
-            _score_card(pdf, factors_with_scores[idx1][1], score1, y, col_w)
-
-            if idx2 < len(factors_with_scores):
-                # Temporarily draw at right column
-                score2 = scores.get(factors_with_scores[idx2][0])
-                pdf.save = (pdf.l_margin, pdf.x, pdf.y)  # not needed
-                old_lm = pdf.l_margin
-                pdf.l_margin = LM + col_w + gap
-                _score_card(pdf, factors_with_scores[idx2][1], score2, y, col_w)
-                pdf.l_margin = old_lm
-
-            # Move y past the tallest card in this row
-            pdf.set_y(y + 32)
-
-        pdf.ln(4)
+        pdf.ln(3)
 
         # General score line
         general = scores.get("general")
@@ -386,15 +373,15 @@ def generate_pdf(company, cuit, title_text, content, include_disclaimer=True):
             pdf.rect(LM, y, CW, 12, "F")
             pdf.set_text_color(*WHITE)
             pdf.set_font("Helvetica", "B", 10)
-            pdf.set_xy(LM + 6, y + 1)
-            pdf.cell(40, 5, "Score General: %d" % general)
-            pdf.set_xy(LM + 6, y + 6)
+            pdf.set_xy(LM + 8, y + 1)
+            pdf.cell(50, 5, "Score General: %d" % general)
+            pdf.set_xy(LM + 8, y + 6)
             pdf.set_font("Helvetica", "B", 7)
-            pdf.cell(40, 4, label.upper())
+            pdf.cell(50, 4, label.upper())
             if rec:
-                pdf.set_xy(LM + 80, y + 2)
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(CW - 86, 8, rec.upper(), align="R")
+                pdf.set_xy(LM + 70, y + 2)
+                pdf.set_font("Helvetica", "B", 8)
+                pdf.cell(CW - 78, 8, rec.upper(), align="R")
             pdf.set_y(y + 16)
             pdf.ln(4)
 
