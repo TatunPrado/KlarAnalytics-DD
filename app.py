@@ -427,6 +427,20 @@ Descripci\u00f3n del perfil de riesgo general, score general, nivel y recomendac
 Verificaciones que un analista humano debe realizar.
 
 EXTENSI\u00d3N: 600-1200 palabras. S\u00e9 concreto, no gen\u00e9rico. Inclu\u00ed scores num\u00e9ricos en CADA factor.
+
+IMPORTANTE: Al final del informe, inclu\u00ed esta secci\u00f3n estructurada con los scores EXACTOS:
+
+===SCORES===
+Financiero: [0-100]
+Tributario: [0-100]
+Legal: [0-100]
+AML: [0-100]
+Reputacional: [0-100]
+Operativo: [0-100]
+Compliance: [0-100]
+General: [0-100]
+Recomendacion: [APROBAR|APROBAR CON MITIGACIONES|RECHAZAR]
+===END SCORES===
 """
 
 def build_dd_report_prompt(company, cuit, transcript):
@@ -821,7 +835,7 @@ def phase_dd_auto(engine):
     </div>""", unsafe_allow_html=True)
 
     with st.expander("Ver informe completo de Due Diligence"):
-        st.markdown(f"""<div class="report-section">{dd_text}</div>""", unsafe_allow_html=True)
+        st.markdown(dd_text)
         try:
             from tools.pdf_report import make_dd_pdf
             pdf_bytes = make_dd_pdf(company, cuit, dd_text)
@@ -944,7 +958,7 @@ def phase_done():
     tab1, tab2 = st.tabs(["Informe de Due Diligence", "Diagn\u00f3stico Empresarial"])
     with tab1:
         if dd_report:
-            st.markdown(f"""<div class="report-section">{dd_report}</div>""", unsafe_allow_html=True)
+            st.markdown(dd_report)
             try:
                 from tools.pdf_report import make_dd_pdf
                 pdf_bytes = make_dd_pdf(company, cuit, dd_report)
@@ -958,7 +972,7 @@ def phase_done():
             st.warning("No hay informe de Due Diligence disponible.")
     with tab2:
         if diagnosis_report:
-            st.markdown(f"""<div class="report-section">{diagnosis_report}</div>""", unsafe_allow_html=True)
+            st.markdown(diagnosis_report)
             try:
                 from tools.pdf_report import make_diagnosis_pdf
                 pdf_bytes = make_diagnosis_pdf(company, cuit, diagnosis_report)

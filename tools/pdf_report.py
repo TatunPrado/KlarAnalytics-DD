@@ -1,4 +1,4 @@
-"""PDF report generation with Prisma Consulting branding."""
+"""PDF report generation with Prisma Consulting branding - professional layout."""
 
 import io
 import re
@@ -6,12 +6,24 @@ from datetime import date
 
 from fpdf import FPDF
 
+NAVY = (15, 27, 45)
+NAVY_LIGHT = (26, 45, 74)
 BLUE = (37, 99, 235)
+BLUE_LIGHT = (219, 234, 254)
 DARK = (15, 23, 42)
 GRAY = (71, 85, 105)
 LIGHT_GRAY = (148, 163, 184)
 WHITE = (255, 255, 255)
 MUTED_BG = (248, 250, 252)
+GREEN = (16, 185, 129)
+GREEN_BG = (236, 253, 245)
+AMBER = (245, 158, 11)
+AMBER_BG = (255, 251, 235)
+RED = (239, 68, 68)
+RED_BG = (254, 242, 242)
+RED_DARK = (127, 29, 29)
+RED_DARK_BG = (254, 226, 226)
+BORDER = (226, 232, 240)
 
 DISCLAIMER = (
     "Este informe ha sido generado por inteligencia artificial de Prisma Consulting "
@@ -22,6 +34,78 @@ DISCLAIMER = (
     "Se recomienda verificar los hallazgos con un profesional calificado."
 )
 
+_REPLACEMENTS = {
+    "\u2014": "-", "\u2013": "-",
+    "\u2018": "'", "\u2019": "'",
+    "\u201c": '"', "\u201d": '"',
+    "\u2022": "-", "\u2026": "...", "\u00a0": " ",
+}
+
+LM = 15
+CW = 180  # 210 - 15*2
+
+def _sanitize(text):
+    for orig, repl in _REPLACEMENTS.items():
+        text = text.replace(orig, repl)
+    text = text.encode("latin-1", errors="replace").decode("latin-1")
+    return text
+
+def _mc(pdf, w, h, text, align="L"):
+    pdf.set_x(LM)
+    pdf.multi_cell(w, h, text, align=align)
+
+def _risk_color(score):
+    if score <= 20:   return GREEN, GREEN_BG
+    if score <= 40:   return GREEN, GREEN_BG
+    if score <= 60:   return AMBER, AMBER_BG
+    if score <= 80:   return RED, RED_BG
+    return RED_DARK, RED_DARK_BG
+
+def _risk_label(score):
+    if score <= 20:   return "Bajo"
+    if score <= 40:   return "Bajo-Medio"
+    if score <= 60:   return "Medio"
+    if score <= 80:   return "Alto"
+    return "Critico"
+
+def _risk_badge_color(score):
+    if score <= 20:   return GREEN, GREEN_BG
+    if score <= 40:   return GREEN, GREEN_BG
+    if score <= 60:   return AMBER, AMBER_BG
+    if score <= 80:   return RED, RED_BG
+    return RED_DARK, RED_DARK_BG
+
+def _draw_risk_bar(pdf, y, score, w=140, h=8):
+    pdf.set_fill_color(226, 232, 240)
+    pdf.rect(LM, y, w, h, "F")
+    fill_color, _ = _risk_color(score)
+    pdf.set_fill_color(*fill_color)
+    fill_w = max(w * score / 100, 4)
+    pdf.rect(LM, y, fill_w, h, "F")
+
+def _parse_scores(text):
+    scores = {}
+    m = re.search(r"===SCORES===\s*(.*?)\s*===END SCORES===", text, re.DOTALL)
+    if not m:
+        return scores
+    for line in m.group(1).split("\n"):
+        line = line.strip()
+        if ":" in line:
+            key, _, val = line.partition(":")
+            key = key.strip().lower()
+            val = val.strip()
+            if key == "recomendacion":
+                scores["recomendacion"] = val
+            else:
+                try:
+                    scores[key] = int(re.sub(r"[^0-9]", "", val))
+                except ValueError:
+                    pass
+    return scores
+
+def _strip_scores_section(text):
+    return re.sub(r"\n===SCORES===\s*.*?\s*===END SCORES===", "", text, flags=re.DOTALL)
+
 
 class ReportPDF(FPDF):
     def __init__(self):
@@ -31,12 +115,12 @@ class ReportPDF(FPDF):
     def header(self):
         if self.page_no() == 1:
             return
-        self.set_font("Helvetica", "B", 8)
+        self.set_font("Helvetica", "B", 7)
         self.set_text_color(*LIGHT_GRAY)
         self.cell(0, 4, "Prisma Consulting | Klar Analytics", align="R")
         self.ln(2)
         self.set_draw_color(*LIGHT_GRAY)
-        self.line(10, self.get_y(), 200, self.get_y())
+        self.line(LM, self.get_y(), 210 - LM, self.get_y())
         self.ln(4)
 
     def footer(self):
@@ -44,6 +128,111 @@ class ReportPDF(FPDF):
         self.set_font("Helvetica", "I", 7)
         self.set_text_color(*LIGHT_GRAY)
         self.cell(0, 10, "Pagina %d/{nb}" % self.page_no(), align="C")
+
+
+def _cover_page(pdf, company, cuit, title_text, scores):
+    w = 210
+
+    # Dark navy block
+    pdf.set_fill_color(*NAVY)
+    pdf.rect(0, 0, w, 95, "F")
+
+    # Accent line
+    pdf.set_fill_color(*BLUE)
+    pdf.rect(0, 95, w, 3, "F")
+
+    pdf.ln(25)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(*BLUE_LIGHT)
+    pdf.cell(0, 5, "PRISMA CONSULTING", align="C")
+    pdf.ln(7)
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(*LIGHT_GRAY)
+    pdf.cell(0, 4, "Klar Analytics - Diagnostico con IA para PYMES", align="C")
+    pdf.ln(20)
+
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.set_text_color(*WHITE)
+    _mc(pdf, CW, 9, title_text, "C")
+    pdf.ln(6)
+    pdf.set_font("Helvetica", "", 12)
+    pdf.set_text_color(148, 163, 184)
+    pdf.cell(0, 6, company, align="C")
+    pdf.ln(20)
+
+    # Meta info
+    today_str = date.today().strftime('%d/%m/%Y')
+    meta_lines = [
+        ("CUIT", cuit),
+        ("Fecha", today_str),
+        ("Clasificacion", "USO CONFIDENCIAL"),
+    ]
+    pdf.set_font("Helvetica", "", 8)
+    for label, val in meta_lines:
+        pdf.set_text_color(*LIGHT_GRAY)
+        pdf.cell(0, 5, "%s: %s" % (label, val), align="C")
+        pdf.ln(4.5)
+
+    # Overall score card
+    general = scores.get("general")
+    if general is not None:
+        pdf.ln(12)
+        color, bg = _risk_color(general)
+        label = _risk_label(general)
+        # Score circle placeholder
+        pdf.set_fill_color(*color)
+        pdf.rect(80, pdf.get_y(), 50, 30, "F")
+        pdf.set_text_color(*WHITE)
+        pdf.set_font("Helvetica", "B", 18)
+        y = pdf.get_y()
+        pdf.set_xy(80, y + 3)
+        pdf.cell(50, 10, str(general), align="C")
+        pdf.set_xy(80, y + 15)
+        pdf.set_font("Helvetica", "B", 7)
+        pdf.cell(50, 5, "RIESGO " + label.upper(), align="C")
+
+
+def _score_card(pdf, factor_name, score, y_start, w=85):
+    label = _risk_label(score) if score is not None else "N/D"
+    color, _ = _risk_color(score) if score is not None else (GRAY, MUTED_BG)
+    display_score = str(score) if score is not None else "--"
+
+    pdf.set_draw_color(*BORDER)
+    pdf.rect(LM, y_start, w, 28, "D")
+
+    # Score number
+    pdf.set_text_color(*color)
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.set_xy(LM + 6, y_start + 4)
+    pdf.cell(20, 8, display_score)
+
+    # Label
+    pdf.set_text_color(*DARK)
+    pdf.set_font("Helvetica", "B", 7)
+    pdf.set_xy(LM + 6, y_start + 14)
+    pdf.cell(w - 12, 4, factor_name.upper())
+
+    # Risk bar
+    if score is not None:
+        bar_x = LM + 6
+        bar_y = y_start + 20
+        bar_w = w - 12
+        pdf.set_fill_color(226, 232, 240)
+        pdf.rect(bar_x, bar_y, bar_w, 4, "F")
+        pdf.set_fill_color(*color)
+        fill_w = max(bar_w * score / 100, 3)
+        pdf.rect(bar_x, bar_y, fill_w, 4, "F")
+
+    # Badge
+    badge_w = pdf.get_string_width(label) + 8
+    pdf.set_fill_color(*color)
+    pdf.set_text_color(*WHITE)
+    pdf.set_font("Helvetica", "B", 6)
+    badge_x = LM + w - badge_w - 6
+    if badge_x < LM + 32:
+        badge_x = LM + 32
+    pdf.set_xy(badge_x, y_start + 4)
+    pdf.cell(badge_w, 6, label, fill=True, align="C")
 
 
 def _parse_markdown_text(text):
@@ -70,141 +259,152 @@ def _parse_markdown_text(text):
     return parsed
 
 
-def _write_disclaimer(pdf):
-    pdf.ln(8)
-    pdf.set_draw_color(37, 99, 235)
-    pdf.set_line_width(0.5)
-    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-    pdf.ln(4)
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.set_text_color(*DARK)
-    pdf.multi_cell(0, 4, "Descargo de responsabilidad")
-    pdf.ln(1)
-    pdf.set_font("Helvetica", "I", 8)
-    pdf.set_text_color(*GRAY)
-    pdf.multi_cell(0, 4, DISCLAIMER)
-
-
-CW = 190  # effective content width (210 - 10*2 margins)
-
-_REPLACEMENTS = {
-    "\u2014": "-",   # em dash
-    "\u2013": "-",   # en dash
-    "\u2018": "'",   # left single quote
-    "\u2019": "'",   # right single quote
-    "\u201c": '"',   # left double quote
-    "\u201d": '"',   # right double quote
-    "\u2022": "-",   # bullet
-    "\u2026": "...", # ellipsis
-    "\u00a0": " ",   # non-breaking space
-}
-
-def _sanitize(text):
-    """Replace non-Latin-1 characters with ASCII equivalents."""
-    for orig, repl in _REPLACEMENTS.items():
-        text = text.replace(orig, repl)
-    # Encode to latin-1, replacing any remaining non-latin-1 chars
-    text = text.encode("latin-1", errors="replace").decode("latin-1")
-    return text
-
-def _mc(pdf, w, h, text):
-    """multi_cell wrapper that resets x to left margin first."""
-    pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(w, h, text)
-
-def _write_content(pdf, title, content_text):
-    for el_type, text in _parse_markdown_text(content_text):
+def _write_body(pdf, content):
+    for el_type, text in _parse_markdown_text(content):
         if el_type == "empty":
             pdf.ln(3)
         elif el_type == "h1":
+            pdf.ln(4)
             pdf.set_font("Helvetica", "B", 14)
             pdf.set_text_color(*DARK)
             _mc(pdf, CW, 7, text)
             pdf.ln(2)
         elif el_type == "h2":
-            pdf.set_font("Helvetica", "B", 12)
+            pdf.ln(3)
+            pdf.set_font("Helvetica", "B", 11)
             pdf.set_text_color(*BLUE)
             _mc(pdf, CW, 6, text)
             pdf.ln(1)
         elif el_type == "h3":
-            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_font("Helvetica", "B", 9)
             pdf.set_text_color(*DARK)
             _mc(pdf, CW, 5, text)
         elif el_type == "bullet":
-            pdf.set_font("Helvetica", "", 9)
+            pdf.set_font("Helvetica", "", 8.5)
             pdf.set_text_color(*GRAY)
             _mc(pdf, CW, 4, "  - " + text)
         elif el_type == "table":
             pdf.set_font("Courier", "", 7)
             pdf.set_text_color(*DARK)
             cells = [c.strip() for c in text.split("|")]
-            line = "  ".join(cells)
-            _mc(pdf, CW, 3.5, line)
+            _mc(pdf, CW, 3.5, "  ".join(cells))
         elif el_type == "bold":
-            pdf.set_font("Helvetica", "B", 9)
+            pdf.set_font("Helvetica", "B", 8.5)
             pdf.set_text_color(*DARK)
             _mc(pdf, CW, 4, text)
         else:
-            pdf.set_font("Helvetica", "", 9)
+            pdf.set_font("Helvetica", "", 8.5)
             pdf.set_text_color(*GRAY)
             _mc(pdf, CW, 4.5, text)
 
 
+def _write_disclaimer(pdf):
+    pdf.ln(8)
+    pdf.set_draw_color(*BLUE)
+    pdf.set_line_width(0.5)
+    pdf.line(LM, pdf.get_y(), 210 - LM, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(*DARK)
+    _mc(pdf, CW, 4, "Descargo de responsabilidad")
+    pdf.ln(1)
+    pdf.set_font("Helvetica", "I", 7)
+    pdf.set_text_color(*GRAY)
+    _mc(pdf, CW, 3.5, DISCLAIMER)
+
+
 def generate_pdf(company, cuit, title_text, content, include_disclaimer=True):
-    """Generate a branded PDF report. Returns bytes."""
     company = _sanitize(company)
     cuit = _sanitize(cuit)
     content = _sanitize(content)
+
+    scores = _parse_scores(content)
+    body = _strip_scores_section(content)
+
     pdf = ReportPDF()
     pdf.alias_nb_pages()
     pdf.add_page()
 
-    # --- Cover / Header area ---
-    w = pdf.w
+    _cover_page(pdf, company, cuit, title_text, scores)
 
-    # Blue accent bar at top
-    pdf.set_fill_color(*BLUE)
-    pdf.rect(0, 0, w, 8, "F")
+    # New page for body
+    pdf.add_page()
 
-    # Logo area - use simple ASCII since core fonts don't support unicode
-    pdf.ln(14)
-    pdf.set_font("Helvetica", "B", 24)
-    pdf.set_text_color(*BLUE)
-    pdf.cell(0, 10, "PRISMA CONSULTING", align="C")
-    pdf.ln(10)
-    pdf.set_font("Helvetica", "", 10)
-    pdf.set_text_color(*GRAY)
-    pdf.cell(0, 6, "Klar Analytics - Diagnostico con IA para PYMES", align="C")
-    pdf.ln(10)
+    # Score summary cards (if we have parsed scores)
+    factor_order = [
+        ("financiero", "Financiero"),
+        ("tributario", "Tributario"),
+        ("legal", "Legal"),
+        ("aml", "AML / Sanciones"),
+        ("reputacional", "Reputacional"),
+        ("operativo", "Operativo"),
+        ("compliance", "Compliance"),
+    ]
+    factors_with_scores = [(key, name) for key, name in factor_order if key in scores]
+    if factors_with_scores:
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.set_text_color(*DARK)
+        _mc(pdf, CW, 6, "RESUMEN DE RIESGOS")
+        pdf.ln(3)
 
-    # Separator
-    pdf.set_draw_color(*BLUE)
-    pdf.set_line_width(0.3)
-    y = pdf.get_y()
-    pdf.line(50, y, 160, y)
-    pdf.ln(8)
+        col_w = 85
+        gap = 8
+        left_x = LM
+        right_x = LM + col_w + gap
 
-    # Report title
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.set_text_color(*DARK)
-    pdf.multi_cell(0, 8, title_text, align="C")
-    pdf.ln(4)
+        rows = (len(factors_with_scores) + 1) // 2
+        for row in range(rows):
+            y = pdf.get_y()
+            idx1 = row * 2
+            idx2 = row * 2 + 1
 
-    # Company / meta info box
-    pdf.set_fill_color(*MUTED_BG)
-    pdf.set_x(30)
-    pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(*DARK)
-    today_str = date.today().strftime('%d/%m/%Y')
-    meta = "Empresa: %s  |  CUIT: %s  |  Fecha: %s" % (company, cuit, today_str)
-    w_meta = pdf.get_string_width(meta) + 20
-    pdf.cell(w_meta, 8, meta, border=0, fill=True, align="C")
-    pdf.ln(12)
+            score1 = scores.get(factors_with_scores[idx1][0])
+            _score_card(pdf, factors_with_scores[idx1][1], score1, y, col_w)
 
-    # --- Content ---
-    _write_content(pdf, title_text, content)
+            if idx2 < len(factors_with_scores):
+                # Temporarily draw at right column
+                score2 = scores.get(factors_with_scores[idx2][0])
+                pdf.save = (pdf.l_margin, pdf.x, pdf.y)  # not needed
+                old_lm = pdf.l_margin
+                pdf.l_margin = LM + col_w + gap
+                _score_card(pdf, factors_with_scores[idx2][1], score2, y, col_w)
+                pdf.l_margin = old_lm
 
-    # --- Disclaimer ---
+            # Move y past the tallest card in this row
+            pdf.set_y(y + 32)
+
+        pdf.ln(4)
+
+        # General score line
+        general = scores.get("general")
+        rec = scores.get("recomendacion", "")
+        if general is not None:
+            color, _ = _risk_color(general)
+            label = _risk_label(general)
+            pdf.set_fill_color(*color)
+            y = pdf.get_y()
+            pdf.rect(LM, y, CW, 12, "F")
+            pdf.set_text_color(*WHITE)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_xy(LM + 6, y + 1)
+            pdf.cell(40, 5, "Score General: %d" % general)
+            pdf.set_xy(LM + 6, y + 6)
+            pdf.set_font("Helvetica", "B", 7)
+            pdf.cell(40, 4, label.upper())
+            if rec:
+                pdf.set_xy(LM + 80, y + 2)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(CW - 86, 8, rec.upper(), align="R")
+            pdf.set_y(y + 16)
+            pdf.ln(4)
+
+        pdf.set_draw_color(*BORDER)
+        pdf.line(LM, pdf.get_y(), 210 - LM, pdf.get_y())
+        pdf.ln(4)
+
+    # Body content
+    _write_body(pdf, body)
+
     if include_disclaimer:
         _write_disclaimer(pdf)
 
